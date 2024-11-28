@@ -28,11 +28,11 @@ declare global {
 function defaultShouldRetryThisError(error: Error): boolean {
     // Common error messages/codes that indicate server overload or temporary issues
     const retryableErrors = [
+        'overloaded',
         'rate_limit',
         'wrong-key',
         'unexpected',
         'capacity',
-        'overloaded',
         'timeout',
         'server_error',
         '429', // Too Many Requests
