@@ -6,7 +6,7 @@ import {
     LanguageModelV1FunctionToolCall,
     LanguageModelV1LogProbs,
     LanguageModelV1ProviderMetadata,
-    LanguageModelV1StreamPart
+    LanguageModelV1StreamPart,
 } from '@ai-sdk/provider'
 
 type Logger = {
@@ -39,7 +39,7 @@ function defaultShouldRetryThisError(error: Error): boolean {
         'unexpected',
         'capacity',
         'overloaded',
-        'timeout', 
+        'timeout',
         'server_error',
         '429', // Too Many Requests
         '500', // Internal Server Error
@@ -49,15 +49,18 @@ function defaultShouldRetryThisError(error: Error): boolean {
     ]
 
     const errorString = error.message.toLowerCase()
-    return retryableErrors.some(errType =>
-        errorString.includes(errType.toLowerCase())
+    return retryableErrors.some((errType) =>
+        errorString.includes(errType.toLowerCase()),
     )
 }
 
 export class FallbackModel implements LanguageModelV1 {
     readonly specificationVersion = 'v1'
 
-    readonly supportsStructuredOutputs: boolean
+    get supportsStructuredOutputs(): boolean {
+        return this.settings.models[this.currentModelIndex]
+            .supportsStructuredOutputs!
+    }
 
     get modelId(): string {
         return this.settings.models[this.currentModelIndex].modelId
@@ -71,7 +74,7 @@ export class FallbackModel implements LanguageModelV1 {
 
     constructor(settings: Settings) {
         this.settings = settings
-        this.supportsStructuredOutputs = true
+
         this.logger = settings.logger || console
 
         this.modelResetInterval = settings.modelResetInterval ?? 3 * 60 * 1000 // Default 3 minutes in ms
@@ -131,9 +134,11 @@ export class FallbackModel implements LanguageModelV1 {
             } catch (error) {
                 lastError = error as Error
                 this.logger.error('Error with model', this.modelId, error)
-                
+
                 // Only retry if it's a server/capacity error
-                const shouldRetry = this.settings.shouldRetryThisError || defaultShouldRetryThisError
+                const shouldRetry =
+                    this.settings.shouldRetryThisError ||
+                    defaultShouldRetryThisError
                 if (!shouldRetry(lastError)) {
                     throw lastError
                 }
@@ -203,7 +208,10 @@ export class FallbackModel implements LanguageModelV1 {
                                 error,
                             )
                             if (self.settings.onError) {
-                                await self.settings.onError(error as Error, self.modelId)
+                                await self.settings.onError(
+                                    error as Error,
+                                    self.modelId,
+                                )
                             }
                             self.switchToNextModel()
                             throw error
