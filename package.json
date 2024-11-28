@@ -1,0 +1,33 @@
+{
+    "name": "ai-fallback",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Automatically switch AI SDK model provider when one of the providers has downtime",
+    "main": "dist/index.js",
+    "module": "esm/index.js",
+    "types": "dist/index.d.ts",
+    "repository": "https://github.com/remorses/",
+    "scripts": {
+        "build": "tsc && tsc -m es6 --outDir esm",
+        "test": "doppler run -- vitest",
+        "watch": "tsc -w"
+    },
+    "files": [
+        "dist",
+        "src",
+        "esm"
+    ],
+    "keywords": [],
+    "author": "Tommaso De Rossi, morse <beats.by.morse@gmail.com>",
+    "license": "",
+    "dependencies": {
+        "@ai-sdk/provider": "^1.0.1",
+        "@ai-sdk/provider-utils": "^2.0.2",
+        "zod": "^3.23.8"
+    },
+    "devDependencies": {
+        "@ai-sdk/anthropic": "^0.0.51",
+        "@ai-sdk/openai": "^0.0.68",
+        "ai": "^4.0.8"
+    }
+}
