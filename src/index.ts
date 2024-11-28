@@ -9,15 +9,9 @@ import {
     LanguageModelV1StreamPart,
 } from '@ai-sdk/provider'
 
-type Logger = {
-    log: (...args: any[]) => void
-    error: (...args: any[]) => void
-}
-
 interface Settings {
     models: Array<LanguageModelV1>
     modelResetInterval?: number
-    logger?: Logger
     shouldRetryThisError?: (error: Error) => boolean
     onError?: (error: Error, modelId: string) => void | Promise<void>
 }
@@ -66,7 +60,6 @@ export class FallbackModel implements LanguageModelV1 {
         return this.settings.models[this.currentModelIndex].modelId
     }
     readonly settings: Settings
-    private logger: Logger
 
     currentModelIndex: number = 0
     private lastModelReset: number = Date.now()
@@ -74,9 +67,6 @@ export class FallbackModel implements LanguageModelV1 {
 
     constructor(settings: Settings) {
         this.settings = settings
-
-        this.logger = settings.logger || console
-
         this.modelResetInterval = settings.modelResetInterval ?? 3 * 60 * 1000 // Default 3 minutes in ms
 
         // Use globalThis.modelId if defined to find initial model
@@ -133,7 +123,6 @@ export class FallbackModel implements LanguageModelV1 {
                 return await fn()
             } catch (error) {
                 lastError = error as Error
-                this.logger.error('Error with model', this.modelId, error)
 
                 // Only retry if it's a server/capacity error
                 const shouldRetry =
@@ -202,11 +191,6 @@ export class FallbackModel implements LanguageModelV1 {
                             }
                             controller.close()
                         } catch (error) {
-                            self.logger.error(
-                                'Error in stream',
-                                self.modelId,
-                                error,
-                            )
                             if (self.settings.onError) {
                                 await self.settings.onError(
                                     error as Error,

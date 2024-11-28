@@ -32,6 +32,10 @@ Reset to the primary model after a delay (e.g., 1 minute):
 const model = createFallback({
     models: [anthropic('claude-3-haiku-20240307'), openai('gpt-3.5-turbo')],
     resetAfterMs: 60000, // Reset after 1 minute
+    onError: (error, modelId) => {
+        console.error(`Error with model ${modelId}:`, error)
+    },
+    modelResetInterval: 60000, // Reset to first model after 1 minute of the first error
 })
 ```
 
