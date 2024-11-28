@@ -49,13 +49,13 @@ const model = createFallback({
 
 ```javascript
 import { createFallback } from 'ai-fallback'
-import { createOpenAI } from '@ai-sdk/openai'
-import { createAnthropic } from '@ai-sdk/anthropic'
+import { openai } from '@ai-sdk/openai'
+import { anthropic } from '@ai-sdk/anthropic'
 
 const model = createFallback({
     models: [
-        createAnthropic('claude-3-haiku-20240307'),
-        createOpenAI('gpt-3.5-turbo'),
+        anthropic('claude-3-haiku-20240307'),
+        openai('gpt-3.5-turbo'),
     ],
 })
 ```
