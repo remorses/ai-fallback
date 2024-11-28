@@ -1,6 +1,6 @@
 import { test, expect } from 'vitest'
 import { z } from 'zod'
-import { createFallback } from './index'
+import { createFallback } from './index.js'
 import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateText, streamText, streamObject } from 'ai'

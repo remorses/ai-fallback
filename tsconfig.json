@@ -1,8 +1,21 @@
 {
-    "extends": "../tsconfig.base.json",
     "compilerOptions": {
+        "target": "ES2017",
+        "module": "NodeNext",
+        // "allowJs": true,
+        "moduleResolution": "NodeNext",
+        
+        "lib": ["es2017", "es2022", "es7", "es6", "dom"],
+        "declaration": true,
+        "declarationMap": true,
+        "strict": true,
+        "noImplicitAny": false,
+        "downlevelIteration": true,
+        "esModuleInterop": true,
+        "sourceMap": true,
+        "jsx": "react-jsx",
+        "skipLibCheck": true,
         "rootDir": "src",
-        "lib": ["dom", "esnext"],
         "outDir": "dist"
     },
     "include": ["src"]
