@@ -11,6 +11,7 @@ import {
 
 interface Settings {
     models: Array<LanguageModelV1>
+    retryAfterOutput?: boolean
     modelResetInterval?: number
     shouldRetryThisError?: (error: Error) => boolean
     onError?: (error: Error, modelId: string) => void | Promise<void>
@@ -64,11 +65,11 @@ export class FallbackModel implements LanguageModelV1 {
     currentModelIndex: number = 0
     private lastModelReset: number = Date.now()
     private readonly modelResetInterval: number
-
+    retryAfterOutput: boolean
     constructor(settings: Settings) {
         this.settings = settings
         this.modelResetInterval = settings.modelResetInterval ?? 3 * 60 * 1000 // Default 3 minutes in ms
-
+        this.retryAfterOutput = settings.retryAfterOutput ?? false
         // Use globalThis.modelId if defined to find initial model
         if (globalThis.__aiModelId) {
             const modelIndex = settings.models.findIndex(
@@ -163,7 +164,6 @@ export class FallbackModel implements LanguageModelV1 {
             this.settings.models[this.currentModelIndex].doGenerate(options),
         )
     }
-
     doStream(options: LanguageModelV1CallOptions): PromiseLike<{
         stream: ReadableStream<LanguageModelV1StreamPart>
         rawCall: { rawPrompt: unknown; rawSettings: Record<string, unknown> }
@@ -172,22 +172,25 @@ export class FallbackModel implements LanguageModelV1 {
         warnings?: LanguageModelV1CallWarning[]
     }> {
         this.checkAndResetModel()
+        let self = this
         return this.retry(async () => {
-            const result = await this.settings.models[
+            const result = await self.settings.models[
                 this.currentModelIndex
             ].doStream(options)
-            const self = this
 
+            let hasStreamedAny = false
             // Wrap the stream to handle errors and switch providers if needed
             const wrappedStream = new ReadableStream<LanguageModelV1StreamPart>(
                 {
                     async start(controller) {
                         try {
                             const reader = result.stream.getReader()
+
                             while (true) {
                                 const { done, value } = await reader.read()
                                 if (done) break
                                 controller.enqueue(value)
+                                // hasStreamedAny = true
                             }
                             controller.close()
                         } catch (error) {
@@ -197,8 +200,28 @@ export class FallbackModel implements LanguageModelV1 {
                                     self.modelId,
                                 )
                             }
-                            self.switchToNextModel()
-                            throw error
+                            if (!hasStreamedAny || self.retryAfterOutput) {
+                                // If nothing was streamed yet, switch models and retry
+                                self.switchToNextModel()
+                                try {
+                                    const nextResult = await self.doStream(
+                                        options,
+                                    )
+                                    const nextReader =
+                                        nextResult.stream.getReader()
+                                    while (true) {
+                                        const { done, value } =
+                                            await nextReader.read()
+                                        if (done) break
+                                        controller.enqueue(value)
+                                    }
+                                    controller.close()
+                                } catch (nextError) {
+                                    controller.error(nextError)
+                                }
+                                return
+                            }
+                            controller.error(error)
                         }
                     },
                 },

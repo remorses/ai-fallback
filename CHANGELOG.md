@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 0.0.4
+
+### Patch Changes
+
+-   Add retryAfterOutput to retry even if error is thrown after stream started
+
 ## 0.0.3
 
 ### Patch Changes

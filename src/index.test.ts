@@ -36,7 +36,7 @@ test('switches model on error', async () => {
             anthropic('claude-3-haiku-20240307'),
         ],
     })
-    
+
     model.currentModelIndex = 0
 
     const result = await generateText({
@@ -129,3 +129,126 @@ test('ReadableStream works like i expect', async () => {
     expect(error).toBeDefined()
     expect(error?.message).toBe('Test stream error')
 })
+
+test('fallback switches models on stream error before any output', async () => {
+    // Create OpenAI client that errors immediately
+    const errorOpenAI = createOpenAI({
+        apiKey: process.env.OPENAI_KEY,
+        fetch: async (url, options) => {
+            const stream = new ReadableStream({
+                start(controller) {
+                    // Error immediately before streaming any data
+                    controller.error(new Error('Injected immediate error'))
+                },
+            })
+
+            return new Response(stream, {
+                // headers: result.headers,
+                // status: result.status,
+                // statusText: result.statusText,
+            })
+        },
+    })
+
+    let err
+    const model = createFallback({
+        models: [errorOpenAI('gpt-3.5-turbo'), openai('gpt-3.5-turbo')],
+        onError(error, modelId) {
+            err = error
+        },
+    })
+    model.currentModelIndex = 0
+
+    const { textStream } = await streamText({
+        model,
+        messages: [
+            {
+                role: 'user',
+                content: 'Say only "hello". only that and nothing else',
+            },
+        ],
+    })
+
+    let text = ''
+    for await (const chunk of textStream) {
+        text += chunk
+    }
+
+    expect(err?.message).toBe('Injected immediate error')
+    console.log({ text })
+    expect(text).toBeTruthy() // Verify we got some text after fallback
+    expect(model.currentModelIndex).toBe(1) // Should have switched to second model
+})
+
+test('fallback switches models on stream error after some output', async () => {
+    // Create OpenAI client that errors after first token
+    const errorOpenAI = createOpenAI({
+        apiKey: process.env.OPENAI_KEY,
+        fetch: async (url, options) => {
+            const result = await fetch(url, options)
+            const originalBody = result.body
+            if (!originalBody) throw new Error('No response body')
+
+            const reader = originalBody.getReader()
+            const stream = new ReadableStream({
+                async start(controller) {
+                    {
+                        const { value } = await reader.read()
+                        // console.log(new TextDecoder().decode(value))
+                        controller.enqueue(value)
+                    }
+                    {
+                        const { value } = await reader.read()
+                        // console.log(new TextDecoder().decode(value))
+                        controller.enqueue(value)
+                    }
+
+                    controller.error(
+                        new Error('Injected error after first token'),
+                    )
+                },
+            })
+
+            return new Response(stream, {
+                headers: result.headers,
+                status: result.status,
+                statusText: result.statusText,
+            })
+        },
+    })
+
+    let err
+    let text = ''
+    const model = createFallback({
+        models: [errorOpenAI('gpt-3.5-turbo'), openai('gpt-3.5-turbo')],
+        retryAfterOutput: true,
+        onError(error, modelId) {
+            err = error
+            text += 'ERROR'
+        },
+    })
+    model.currentModelIndex = 0
+
+    const { textStream } = await streamText({
+        model,
+        messages: [
+            {
+                role: 'user',
+                content: 'Say only "hello" 3 times. only that and nothing else',
+            },
+        ],
+    })
+
+    for await (const chunk of textStream) {
+        text += chunk
+    }
+
+    expect(err?.message).toBe('Injected error after first token')
+    console.log({ text })
+    expect(text).toBeTruthy() // Verify we got some text after fallback
+    expect(model.currentModelIndex).toBe(1) // Should have switched to second model
+})
+
+function sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+}

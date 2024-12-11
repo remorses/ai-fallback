@@ -53,11 +53,44 @@ import { openai } from '@ai-sdk/openai'
 import { anthropic } from '@ai-sdk/anthropic'
 
 const model = createFallback({
-    models: [
-        anthropic('claude-3-haiku-20240307'),
-        openai('gpt-3.5-turbo'),
-    ],
+    models: [anthropic('claude-3-haiku-20240307'), openai('gpt-3.5-turbo')],
 })
+```
+
+---
+
+### Retry After Output
+
+The `retryAfterOutput` option allows retrying with a different model even if some tokens were already streamed. This is useful when you want to restart the generation from scratch if an error occurs mid-stream:
+
+```ts
+import { createFallback } from 'ai-fallback'
+import { openai } from '@ai-sdk/openai'
+import { anthropic } from '@ai-sdk/anthropic'
+import { streamText } from 'ai'
+
+let fullText = ''
+
+const model = createFallback({
+    models: [anthropic('claude-3-haiku-20240307'), openai('gpt-3.5-turbo')],
+    retryAfterOutput: true, // Enable retrying even after partial output
+    onError: (err) => {
+        console.error('Error:', err)
+        // reset the full text because error happened when some tokens were already streamed in
+        fullText = ''
+    },
+})
+
+const stream = await streamText({
+    model,
+    system: 'You are a helpful assistant.',
+    messages: [{ role: 'user', content: 'Write a long story.' }],
+})
+
+for await (const chunk of stream.textStream) {
+    fullText += chunk
+    console.log('Current text:', fullText)
+}
 ```
 
 ---

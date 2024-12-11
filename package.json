@@ -1,6 +1,6 @@
 {
     "name": "ai-fallback",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "description": "Automatically switch AI SDK model provider when one of the providers has downtime",
     "type": "module",
     "main": "dist/index.js",
@@ -22,13 +22,13 @@
     "author": "Tommaso De Rossi, morse <beats.by.morse@gmail.com>",
     "license": "",
     "dependencies": {
-        "@ai-sdk/provider": "^1.0.1",
-        "@ai-sdk/provider-utils": "^2.0.2"
+        "@ai-sdk/provider": "^1.0.2",
+        "@ai-sdk/provider-utils": "^2.0.4"
     },
     "devDependencies": {
-        "zod": "^3.23.8",
-        "@ai-sdk/anthropic": "^0.0.51",
-        "@ai-sdk/openai": "^0.0.68",
-        "ai": "^4.0.8"
+        "@ai-sdk/anthropic": "^1.0.5",
+        "@ai-sdk/openai": "^1.0.8",
+        "ai": "^4.0.14",
+        "zod": "^3.23.8"
     }
 }
