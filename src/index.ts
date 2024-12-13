@@ -30,6 +30,11 @@ function defaultShouldRetryThisError(error: Error): boolean {
     // Common error messages/codes that indicate server overload or temporary issues
     const retryableErrors = [
         'overloaded',
+        'service unavailable',
+        'bad gateway',
+        'too many requests',
+        'internal server error',
+        'gateway timeout',
         'rate_limit',
         'wrong-key',
         'unexpected',

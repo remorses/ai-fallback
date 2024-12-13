@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 0.0.5
+
+### Patch Changes
+
+-   Handle more errors like service unavailable
+
 ## 0.0.4
 
 ### Patch Changes
