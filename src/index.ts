@@ -27,6 +27,17 @@ declare global {
 
 // Default error retry logic
 function defaultShouldRetryThisError(error: Error): boolean {
+    let statusCode = error?.['statusCode']
+    if (
+        statusCode &&
+        (statusCode === 408 || // request timeout
+            statusCode === 409 || // conflict
+            statusCode === 429 || // too many requests
+            statusCode >= 500) // server error)
+    ) {
+        return true
+    }
+
     // Common error messages/codes that indicate server overload or temporary issues
     const retryableErrors = [
         'overloaded',

@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 0.0.6
+
+### Patch Changes
+
+-   use error status code if available
+
 ## 0.0.5
 
 ### Patch Changes
