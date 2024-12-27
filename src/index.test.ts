@@ -77,6 +77,36 @@ test('groq switches model on error, switches to third model', async () => {
     model.currentModelIndex = 0
 })
 
+test('shouldRetryThisError works with non-existent model error', async () => {
+    let called = false
+    const model = createFallback({
+        models: [
+            openai('non-existent-model'),
+            anthropic('claude-3-haiku-20240307'),
+        ],
+        shouldRetryThisError: (error) => {
+            called = true
+            // console.error(error)
+            return error.message.toLowerCase().includes('does not exist')
+        },
+    })
+
+    model.currentModelIndex = 0
+
+    const result = await generateText({
+        model,
+        system: 'You only respond hello',
+        messages: [{ role: 'user', content: 'Say hello' }],
+    })
+    expect(called).toBe(true)
+
+    // Should switch to Anthropic after OpenAI error
+    expect(model.currentModelIndex).toBe(1)
+    expect(model.modelId).toBe('claude-3-haiku-20240307')
+    expect(result.text).toBeTruthy()
+    model.currentModelIndex = 0
+})
+
 test('streamText works', async () => {
     const model = createFallback({
         models: [anthropic('claude-3-haiku-20240307'), openai('gpt-3.5-turbo')],

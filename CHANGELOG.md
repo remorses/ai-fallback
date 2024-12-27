@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 0.1.0
+
+### Minor Changes
+
+-   Handle more status code errors
+
 ## 0.0.6
 
 ### Patch Changes
