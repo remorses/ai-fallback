@@ -25,16 +25,23 @@ declare global {
     var __aiModelId: string | undefined
 }
 
-// Default error retry logic
+const retryableStatusCodes = [
+    401, // wrong API key
+    403, // permission error, like cannot access model or from a non accessible region
+    408, // request timeout
+    409, // conflict
+    413, // payload too large
+    429, // too many requests/rate limits
+    500, // server error (and above)
+]
+
 function defaultShouldRetryThisError(error: Error): boolean {
     let statusCode = error?.['statusCode']
+    // Status codes that indicate retryable errors
+
     if (
         statusCode &&
-        (statusCode === 401 || // wrong API key
-            statusCode === 408 || // request timeout
-            statusCode === 409 || // conflict
-            statusCode === 429 || // too many requests
-            statusCode >= 500) // server error)
+        (retryableStatusCodes.includes(statusCode) || statusCode > 500)
     ) {
         return true
     }
