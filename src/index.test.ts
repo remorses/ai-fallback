@@ -2,6 +2,7 @@ import { test, expect } from 'vitest'
 import { z } from 'zod'
 import { createFallback } from './index.js'
 import { createOpenAI } from '@ai-sdk/openai'
+import { createGroq } from '@ai-sdk/groq'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateText, streamText, streamObject } from 'ai'
 
@@ -48,6 +49,30 @@ test('switches model on error', async () => {
     // After error with OpenAI, should have switched to Anthropic
     expect(model.currentModelIndex).toBe(1)
     expect(model.modelId).toBe('claude-3-haiku-20240307')
+    expect(result.text).toBeTruthy()
+    model.currentModelIndex = 0
+})
+
+test('groq switches model on error, switches to third model', async () => {
+    const model = createFallback({
+        models: [
+            createGroq({ apiKey: 'wrong-key' })('gpt-3.5-turbo'),
+            createOpenAI({ apiKey: 'wrong-key' })('gpt-3.5-turbo'),
+            anthropic('claude-3-haiku-20240307'),
+        ],
+    })
+
+    model.currentModelIndex = 0
+
+    const result = await generateText({
+        model,
+        system: 'You only respond hello',
+        messages: [{ role: 'user', content: 'Say hello' }],
+    })
+
+    // After error with OpenAI, should have switched to Anthropic
+    expect(model.currentModelIndex).toBe(2)
+    expect(model.modelId).toMatchInlineSnapshot(`"claude-3-haiku-20240307"`)
     expect(result.text).toBeTruthy()
     model.currentModelIndex = 0
 })

@@ -27,6 +27,7 @@
     },
     "devDependencies": {
         "@ai-sdk/anthropic": "^1.0.5",
+        "@ai-sdk/groq": "^1.0.9",
         "@ai-sdk/openai": "^1.0.8",
         "ai": "^4.0.14",
         "zod": "^3.23.8"

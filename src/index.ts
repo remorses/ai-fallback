@@ -30,7 +30,8 @@ function defaultShouldRetryThisError(error: Error): boolean {
     let statusCode = error?.['statusCode']
     if (
         statusCode &&
-        (statusCode === 408 || // request timeout
+        (statusCode === 401 || // wrong API key
+            statusCode === 408 || // request timeout
             statusCode === 409 || // conflict
             statusCode === 429 || // too many requests
             statusCode >= 500) // server error)
@@ -140,7 +141,6 @@ export class FallbackModel implements LanguageModelV1 {
                 return await fn()
             } catch (error) {
                 lastError = error as Error
-
                 // Only retry if it's a server/capacity error
                 const shouldRetry =
                     this.settings.shouldRetryThisError ||
