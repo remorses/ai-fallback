@@ -37,7 +37,6 @@ const retryableStatusCodes = [
 
 function defaultShouldRetryThisError(error: Error): boolean {
     let statusCode = error?.['statusCode']
-    // Status codes that indicate retryable errors
 
     if (
         statusCode &&
