@@ -1,10 +1,9 @@
 {
     "name": "ai-fallback",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Automatically switch AI SDK model provider when one of the providers has downtime",
     "type": "module",
     "main": "dist/index.js",
-    "module": "esm/index.js",
     "types": "dist/index.d.ts",
     "repository": "https://github.com/remorses/ai-fallback",
     "scripts": {
