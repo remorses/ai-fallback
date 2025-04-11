@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 0.1.2
+
+### Patch Changes
+
+-   Update deps
+
 ## 0.1.1
 
 ### Patch Changes
