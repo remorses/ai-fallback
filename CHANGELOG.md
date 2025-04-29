@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 0.1.3
+
+### Patch Changes
+
+-   Do not throw in case a model throws a non Error instance
+
 ## 0.1.2
 
 ### Patch Changes

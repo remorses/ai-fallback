@@ -34,6 +34,26 @@ const retryableStatusCodes = [
     429, // too many requests/rate limits
     500, // server error (and above)
 ]
+// Common error messages/codes that indicate server overload or temporary issues
+const retryableErrors = [
+    'overloaded',
+    'service unavailable',
+    'bad gateway',
+    'too many requests',
+    'internal server error',
+    'gateway timeout',
+    'rate_limit',
+    'wrong-key',
+    'unexpected',
+    'capacity',
+    'timeout',
+    'server_error',
+    '429', // Too Many Requests
+    '500', // Internal Server Error
+    '502', // Bad Gateway
+    '503', // Service Unavailable
+    '504', // Gateway Timeout
+]
 
 function defaultShouldRetryThisError(error: Error): boolean {
     let statusCode = error?.['statusCode']
@@ -45,31 +65,8 @@ function defaultShouldRetryThisError(error: Error): boolean {
         return true
     }
 
-    // Common error messages/codes that indicate server overload or temporary issues
-    const retryableErrors = [
-        'overloaded',
-        'service unavailable',
-        'bad gateway',
-        'too many requests',
-        'internal server error',
-        'gateway timeout',
-        'rate_limit',
-        'wrong-key',
-        'unexpected',
-        'capacity',
-        'timeout',
-        'server_error',
-        '429', // Too Many Requests
-        '500', // Internal Server Error
-        '502', // Bad Gateway
-        '503', // Service Unavailable
-        '504', // Gateway Timeout
-    ]
-
-    const errorString = error.message.toLowerCase()
-    return retryableErrors.some((errType) =>
-        errorString.includes(errType.toLowerCase()),
-    )
+    const errorString = error.message?.toLowerCase() || ''
+    return retryableErrors.some((errType) => errorString.includes(errType))
 }
 
 export class FallbackModel implements LanguageModelV1 {
