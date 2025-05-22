@@ -15,6 +15,7 @@ interface Settings {
     modelResetInterval?: number
     shouldRetryThisError?: (error: Error) => boolean
     onError?: (error: Error, modelId: string) => void | Promise<void>
+    getModelOptions?: (modelId: string, baseOptions: LanguageModelV1CallOptions) => LanguageModelV1CallOptions;
 }
 
 export function createFallback(settings: Settings): FallbackModel {
@@ -179,9 +180,12 @@ export class FallbackModel implements LanguageModelV1 {
         logprobs?: LanguageModelV1LogProbs
     }> {
         this.checkAndResetModel()
-        return this.retry(() =>
-            this.settings.models[this.currentModelIndex].doGenerate(options),
-        )
+        return this.retry(() => {
+            const currentModel = this.settings.models[this.currentModelIndex];
+            // Apply model-specific options if the getModelOptions function is provided
+            const modelOptions = this.settings.getModelOptions ? this.settings.getModelOptions(currentModel.modelId, options) : options;
+            return currentModel.doGenerate(modelOptions);
+        })
     }
     doStream(options: LanguageModelV1CallOptions): PromiseLike<{
         stream: ReadableStream<LanguageModelV1StreamPart>
@@ -193,9 +197,10 @@ export class FallbackModel implements LanguageModelV1 {
         this.checkAndResetModel()
         let self = this
         return this.retry(async () => {
-            const result = await self.settings.models[
-                this.currentModelIndex
-            ].doStream(options)
+            const currentModel = self.settings.models[self.currentModelIndex];
+            // Apply model-specific options if the getModelOptions function is provided
+            const modelOptions = self.settings.getModelOptions ? self.settings.getModelOptions(currentModel.modelId, options) : options;
+            const result = await currentModel.doStream(modelOptions);
 
             let hasStreamedAny = false
             // Wrap the stream to handle errors and switch providers if needed

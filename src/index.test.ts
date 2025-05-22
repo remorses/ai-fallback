@@ -107,6 +107,35 @@ test('shouldRetryThisError works with non-existent model error', async () => {
     model.currentModelIndex = 0
 })
 
+test('getModelOptions works', async () => {
+    const calledForModel: string[] = [];
+    const model = createFallback({
+        models: [createOpenAI({ apiKey: 'wrong-key' })('gpt-3.5-turbo'), anthropic('claude-3-haiku-20240307'),],
+        getModelOptions: (modelId, options) => {
+            calledForModel.push(modelId)
+            if (modelId === 'claude-3-haiku-20240307') {
+                return {
+                    ...options,
+                    maxTokens: 100,
+                }
+            }
+            return options
+        },
+    })
+
+    const result = await generateText({
+        model,
+        system: 'You are a helpful assistant.',
+        messages: [{ role: 'user', content: 'Count from 1 to 5.' }],
+        maxTokens: 200
+    })
+    
+    expect(calledForModel).toEqual(['gpt-3.5-turbo', 'claude-3-haiku-20240307'])
+    expect(model.currentModelIndex).toBe(1)
+    expect(model.modelId).toBe('claude-3-haiku-20240307')
+    expect(result.text).toBeTruthy()
+})
+
 test('streamText works', async () => {
     const model = createFallback({
         models: [anthropic('claude-3-haiku-20240307'), openai('gpt-3.5-turbo')],
