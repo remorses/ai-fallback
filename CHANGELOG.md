@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 0.1.4
+
+### Patch Changes
+
+-   Do not store model id globally
+
 ## 0.1.3
 
 ### Patch Changes
