@@ -81,26 +81,15 @@ export class FallbackModel implements LanguageModelV1 {
     currentModelIndex: number = 0
     private lastModelReset: number = Date.now()
     private readonly modelResetInterval: number
-    aiModelId: string | undefined;
     retryAfterOutput: boolean
     constructor(settings: Settings) {
         this.settings = settings
         this.modelResetInterval = settings.modelResetInterval ?? 3 * 60 * 1000 // Default 3 minutes in ms
         this.retryAfterOutput = settings.retryAfterOutput ?? false
-        // Use aiModelId if defined to find initial model
-        if (this.aiModelId) {
-            const modelIndex = settings.models.findIndex(
-                (p) => p.modelId === this.aiModelId,
-            )
-            if (modelIndex !== -1) {
-                this.currentModelIndex = modelIndex
-            }
-        }
 
         if (!this.settings.models[this.currentModelIndex]) {
             throw new Error('No models available in settings')
         }
-        this.aiModelId = this.settings.models[this.currentModelIndex].modelId
     }
 
     get defaultObjectGenerationMode(): 'json' | 'tool' | undefined {
@@ -119,7 +108,6 @@ export class FallbackModel implements LanguageModelV1 {
             this.currentModelIndex !== 0
         ) {
             this.currentModelIndex = 0
-            this.aiModelId = this.settings.models[0].modelId
             this.lastModelReset = now
         }
     }
@@ -127,7 +115,6 @@ export class FallbackModel implements LanguageModelV1 {
     private switchToNextModel() {
         this.currentModelIndex =
             (this.currentModelIndex + 1) % this.settings.models.length
-        this.aiModelId = this.settings.models[this.currentModelIndex].modelId
     }
 
     private async retry<T>(fn: () => PromiseLike<T>): Promise<T> {
