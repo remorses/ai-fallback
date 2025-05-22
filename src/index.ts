@@ -21,10 +21,6 @@ export function createFallback(settings: Settings): FallbackModel {
     return new FallbackModel(settings)
 }
 
-declare global {
-    var __aiModelId: string | undefined
-}
-
 const retryableStatusCodes = [
     401, // wrong API key
     403, // permission error, like cannot access model or from a non accessible region
@@ -90,21 +86,10 @@ export class FallbackModel implements LanguageModelV1 {
         this.settings = settings
         this.modelResetInterval = settings.modelResetInterval ?? 3 * 60 * 1000 // Default 3 minutes in ms
         this.retryAfterOutput = settings.retryAfterOutput ?? false
-        // Use globalThis.modelId if defined to find initial model
-        if (globalThis.__aiModelId) {
-            const modelIndex = settings.models.findIndex(
-                (p) => p.modelId === globalThis.__aiModelId,
-            )
-            if (modelIndex !== -1) {
-                this.currentModelIndex = modelIndex
-            }
-        }
 
         if (!this.settings.models[this.currentModelIndex]) {
             throw new Error('No models available in settings')
         }
-        globalThis.__aiModelId =
-            this.settings.models[this.currentModelIndex].modelId
     }
 
     get defaultObjectGenerationMode(): 'json' | 'tool' | undefined {
@@ -123,7 +108,6 @@ export class FallbackModel implements LanguageModelV1 {
             this.currentModelIndex !== 0
         ) {
             this.currentModelIndex = 0
-            globalThis.__aiModelId = this.settings.models[0].modelId
             this.lastModelReset = now
         }
     }
@@ -131,8 +115,6 @@ export class FallbackModel implements LanguageModelV1 {
     private switchToNextModel() {
         this.currentModelIndex =
             (this.currentModelIndex + 1) % this.settings.models.length
-        globalThis.__aiModelId =
-            this.settings.models[this.currentModelIndex].modelId
     }
 
     private async retry<T>(fn: () => PromiseLike<T>): Promise<T> {
