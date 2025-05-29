@@ -21,8 +21,8 @@
     "author": "Tommaso De Rossi, morse <beats.by.morse@gmail.com>",
     "license": "",
     "dependencies": {
-        "@ai-sdk/provider": "*",
-        "@ai-sdk/provider-utils": "*"
+        "@ai-sdk/provider": "^1",
+        "@ai-sdk/provider-utils": "^2"
     },
     "devDependencies": {
         "@ai-sdk/anthropic": "^1.2.9",
