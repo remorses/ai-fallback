@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 0.1.5
+
+### Patch Changes
+
+-   Softer deps versions to prevent tsc issues
+
 ## 0.1.4
 
 ### Patch Changes

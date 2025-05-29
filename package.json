@@ -1,6 +1,6 @@
 {
     "name": "ai-fallback",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "description": "Automatically switch AI SDK model provider when one of the providers has downtime",
     "type": "module",
     "main": "dist/index.js",
