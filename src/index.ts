@@ -1,16 +1,16 @@
 import {
-    LanguageModelV1,
-    LanguageModelV1CallOptions,
-    LanguageModelV1CallWarning,
-    LanguageModelV1FinishReason,
-    LanguageModelV1FunctionToolCall,
-    LanguageModelV1LogProbs,
-    LanguageModelV1ProviderMetadata,
-    LanguageModelV1StreamPart,
+    LanguageModelV2,
+    LanguageModelV2CallOptions,
+    LanguageModelV2CallWarning,
+    LanguageModelV2FinishReason,
+    LanguageModelV2StreamPart,
+    LanguageModelV2Content,
+    LanguageModelV2Usage,
+    SharedV2ProviderMetadata,
 } from '@ai-sdk/provider'
 
 interface Settings {
-    models: Array<LanguageModelV1>
+    models: Array<LanguageModelV2>
     retryAfterOutput?: boolean
     modelResetInterval?: number
     shouldRetryThisError?: (error: Error) => boolean
@@ -65,12 +65,13 @@ function defaultShouldRetryThisError(error: Error): boolean {
     return retryableErrors.some((errType) => errorString.includes(errType))
 }
 
-export class FallbackModel implements LanguageModelV1 {
-    readonly specificationVersion = 'v1'
+export class FallbackModel implements LanguageModelV2 {
+    readonly specificationVersion = 'v2'
 
-    get supportsStructuredOutputs(): boolean {
-        return this.settings.models[this.currentModelIndex]
-            .supportsStructuredOutputs!
+    get supportedUrls():
+        | Record<string, RegExp[]>
+        | PromiseLike<Record<string, RegExp[]>> {
+        return this.settings.models[this.currentModelIndex].supportedUrls
     }
 
     get modelId(): string {
@@ -90,11 +91,6 @@ export class FallbackModel implements LanguageModelV1 {
         if (!this.settings.models[this.currentModelIndex]) {
             throw new Error('No models available in settings')
         }
-    }
-
-    get defaultObjectGenerationMode(): 'json' | 'tool' | undefined {
-        return this.settings.models[this.currentModelIndex]
-            .defaultObjectGenerationMode
     }
 
     get provider(): string {
@@ -147,41 +143,42 @@ export class FallbackModel implements LanguageModelV1 {
         } while (true)
     }
 
-    doGenerate(options: LanguageModelV1CallOptions): PromiseLike<{
-        text?: string
-        toolCalls?: Array<LanguageModelV1FunctionToolCall>
-        finishReason: LanguageModelV1FinishReason
-        usage: { promptTokens: number; completionTokens: number }
-        rawCall: { rawPrompt: unknown; rawSettings: Record<string, unknown> }
-        rawResponse?: { headers?: Record<string, string> }
-        request?: { body?: string }
-        response?: { id?: string; timestamp?: Date; modelId?: string }
-        warnings?: LanguageModelV1CallWarning[]
-        providerMetadata?: LanguageModelV1ProviderMetadata
-        logprobs?: LanguageModelV1LogProbs
+    doGenerate(options: LanguageModelV2CallOptions): PromiseLike<{
+        content: LanguageModelV2Content[]
+        finishReason: LanguageModelV2FinishReason
+        usage: LanguageModelV2Usage
+        providerMetadata?: SharedV2ProviderMetadata
+        request?: { body?: unknown }
+        response?: {
+            headers?: Record<string, string>
+            id?: string
+            timestamp?: Date
+            modelId?: string
+        }
+        warnings: LanguageModelV2CallWarning[]
     }> {
         this.checkAndResetModel()
         return this.retry(() =>
             this.settings.models[this.currentModelIndex].doGenerate(options),
         )
     }
-    doStream(options: LanguageModelV1CallOptions): PromiseLike<{
-        stream: ReadableStream<LanguageModelV1StreamPart>
-        rawCall: { rawPrompt: unknown; rawSettings: Record<string, unknown> }
-        rawResponse?: { headers?: Record<string, string> }
-        request?: { body?: string }
-        warnings?: LanguageModelV1CallWarning[]
+
+    doStream(options: LanguageModelV2CallOptions): PromiseLike<{
+        stream: ReadableStream<LanguageModelV2StreamPart>
+        request?: { body?: unknown }
+        response?: { headers?: Record<string, string> }
     }> {
         this.checkAndResetModel()
         let self = this
         return this.retry(async () => {
-            const result = await self.settings.models[
-                this.currentModelIndex
-            ].doStream(options)
+            const result =
+                await self.settings.models[this.currentModelIndex].doStream(
+                    options,
+                )
 
             let hasStreamedAny = false
             // Wrap the stream to handle errors and switch providers if needed
-            const wrappedStream = new ReadableStream<LanguageModelV1StreamPart>(
+            const wrappedStream = new ReadableStream<LanguageModelV2StreamPart>(
                 {
                     async start(controller) {
                         try {
@@ -205,9 +202,8 @@ export class FallbackModel implements LanguageModelV1 {
                                 // If nothing was streamed yet, switch models and retry
                                 self.switchToNextModel()
                                 try {
-                                    const nextResult = await self.doStream(
-                                        options,
-                                    )
+                                    const nextResult =
+                                        await self.doStream(options)
                                     const nextReader =
                                         nextResult.stream.getReader()
                                     while (true) {
@@ -231,6 +227,8 @@ export class FallbackModel implements LanguageModelV1 {
             return {
                 ...result,
                 stream: wrappedStream,
+                request: result.request,
+                response: result.response,
             }
         })
     }

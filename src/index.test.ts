@@ -129,7 +129,7 @@ test('streamText works', async () => {
 
 test('streamObject works', async () => {
     const model = createFallback({
-        models: [anthropic('claude-3-haiku-20240307'), openai('gpt-3.5-turbo')],
+        models: [openai('gpt-4.1-mini'), anthropic('claude-3-haiku-20240307')],
     })
 
     const stream = await streamObject({
@@ -139,7 +139,7 @@ test('streamObject works', async () => {
             {
                 role: 'user',
                 content:
-                    'Give me a person object with name and age properties.',
+                    'Give me a person object with name set to "Tommy" and age set to 5 properties.',
             },
         ],
         schema: z.object({
@@ -152,6 +152,12 @@ test('streamObject works', async () => {
     for await (const chunk of stream.partialObjectStream) {
         result = chunk
     }
+    expect(await stream.object).toMatchInlineSnapshot(`
+      {
+        "age": 5,
+        "name": "Tommy",
+      }
+    `)
 
     expect(result).toHaveProperty('name')
     expect(result).toHaveProperty('age')
