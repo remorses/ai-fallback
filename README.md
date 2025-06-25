@@ -24,7 +24,7 @@ This package ensures reliability by specifying multiple AI models as fallbacks. 
 ### Installation
 
 ```bash
-npm install ai-fallback
+npm install ai-fallback@0 # use version 0.x.x for AI sdk v4
 ```
 
 ---
