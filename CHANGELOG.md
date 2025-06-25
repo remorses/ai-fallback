@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 1.0.0
+
+### Major Changes
+
+-   423b412: Add support for AI sdk v5
+
 ## 0.1.5
 
 ### Patch Changes
