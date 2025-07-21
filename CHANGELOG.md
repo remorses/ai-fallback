@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 1.0.1
+
+### Patch Changes
+
+-   Add support for object errors thrown by anthropic
+
 ## 1.0.0
 
 ### Major Changes

@@ -5,6 +5,7 @@
     "linked": [],
     "access": "public",
     "baseBranch": "main",
+    "githubRelease": true,
     "updateInternalDependencies": "patch",
     "ignore": []
 }

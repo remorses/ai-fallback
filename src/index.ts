@@ -51,7 +51,7 @@ const retryableErrors = [
     '504', // Gateway Timeout
 ]
 
-function defaultShouldRetryThisError(error: Error): boolean {
+function defaultShouldRetryThisError(error: any): boolean {
     let statusCode = error?.['statusCode']
 
     if (
@@ -61,8 +61,15 @@ function defaultShouldRetryThisError(error: Error): boolean {
         return true
     }
 
-    const errorString = error.message?.toLowerCase() || ''
-    return retryableErrors.some((errType) => errorString.includes(errType))
+    if (error?.message) {
+        const errorString = error.message.toLowerCase() || ''
+        return retryableErrors.some((errType) => errorString.includes(errType))
+    }
+    if (error && typeof error === 'object') {
+        const errorString = JSON.stringify(error).toLowerCase() || ''
+        return retryableErrors.some((errType) => errorString.includes(errType))
+    }
+    return false
 }
 
 export class FallbackModel implements LanguageModelV2 {
