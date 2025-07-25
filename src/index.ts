@@ -93,7 +93,7 @@ export class FallbackModel implements LanguageModelV2 {
     constructor(settings: Settings) {
         this.settings = settings
         this.modelResetInterval = settings.modelResetInterval ?? 3 * 60 * 1000 // Default 3 minutes in ms
-        this.retryAfterOutput = settings.retryAfterOutput ?? false
+        this.retryAfterOutput = settings.retryAfterOutput ?? true
 
         if (!this.settings.models[this.currentModelIndex]) {
             throw new Error('No models available in settings')
@@ -177,6 +177,8 @@ export class FallbackModel implements LanguageModelV2 {
     }> {
         this.checkAndResetModel()
         let self = this
+        const shouldRetry =
+            this.settings.shouldRetryThisError || defaultShouldRetryThisError
         return this.retry(async () => {
             const result =
                 await self.settings.models[this.currentModelIndex].doStream(
@@ -192,10 +194,27 @@ export class FallbackModel implements LanguageModelV2 {
                             const reader = result.stream.getReader()
 
                             while (true) {
-                                const { done, value } = await reader.read()
+                                const result = await reader.read()
+
+                                const { done, value } = result
+                                if (
+                                    !hasStreamedAny &&
+                                    value &&
+                                    typeof value === 'object' &&
+                                    'error' in value
+                                ) {
+                                    const error = value.error as any
+                                    if (shouldRetry(error)) {
+                                        throw error
+                                    }
+                                }
+
                                 if (done) break
                                 controller.enqueue(value)
-                                // hasStreamedAny = true
+
+                                if (value?.type !== 'stream-start') {
+                                    hasStreamedAny = true
+                                }
                             }
                             controller.close()
                         } catch (error) {

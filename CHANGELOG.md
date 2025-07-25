@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 1.0.2
+
+### Patch Changes
+
+-   Handle anthropic errors after stream start as part errors
+
 ## 1.0.1
 
 ### Patch Changes

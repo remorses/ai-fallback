@@ -4,7 +4,13 @@ import { createFallback } from './index.js'
 import { createOpenAI } from '@ai-sdk/openai'
 import { createGroq } from '@ai-sdk/groq'
 import { createAnthropic } from '@ai-sdk/anthropic'
-import { generateText, streamText, streamObject } from 'ai'
+import { generateText, streamText, streamObject, tool } from 'ai'
+import { convertArrayToReadableStream } from '@ai-sdk/provider-utils/test'
+import {
+    LanguageModelV2StreamPart,
+    LanguageModelV2CallWarning,
+} from '@ai-sdk/provider'
+import { MockLanguageModelV2 } from './mock-model.js'
 
 const openai = createOpenAI({
     apiKey: process.env.OPENAI_KEY,
@@ -313,3 +319,56 @@ test('fallback switches models on stream error after some output', async () => {
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
+
+
+test('handles overloaded_error from reader.read() and retries with fallback model', async () => {
+    const encounteredErrors: any[] = []
+
+    const model = createFallback({
+        models: [
+            new MockLanguageModelV2({
+                doStream: async () => ({
+                    stream: convertArrayToReadableStream([
+                        {
+                            type: 'stream-start',
+                        },
+                        {
+                            type: 'error',
+                            error: 'Overloaded',
+                        },
+                    ] as LanguageModelV2StreamPart[]),
+                }),
+            }),
+            openai('gpt-4.1-mini'),
+            anthropic('claude-3-haiku-20240307'),
+        ],
+        shouldRetryThisError: (error) => {
+            encounteredErrors.push(error)
+            return true
+        },
+        onError: async (error, modelId) => {
+            console.log(`Error from model ${modelId}:`, error)
+        },
+    })
+
+    model.currentModelIndex = 0
+
+    const res = streamText({
+        model,
+        messages: [
+            {
+                role: 'user',
+                content: 'say "hello" 3 times. exactly that and nothing else',
+            },
+        ],
+    })
+    await res.consumeStream()
+    const result = await res.text
+    expect(result).toBeTruthy()
+    expect(result).toMatchInlineSnapshot(`"hello hello hello"`)
+    expect(encounteredErrors.length).toMatchInlineSnapshot(`1`)
+    expect(encounteredErrors[0]).toMatchInlineSnapshot(`"Overloaded"`)
+
+    expect(model.currentModelIndex).toMatchInlineSnapshot(`1`)
+    expect(model.modelId).toMatchInlineSnapshot(`"gpt-4.1-mini"`)
+}, 1000 * 10)
