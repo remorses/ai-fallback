@@ -355,10 +355,11 @@ test('handles overloaded_error from reader.read() and retries with fallback mode
 
     const res = streamText({
         model,
+        temperature: 0,
         messages: [
             {
                 role: 'user',
-                content: 'say "hello" 3 times. exactly that and nothing else',
+                content: 'say "hello" 3 times with spaces. exactly that and nothing else',
             },
         ],
     })
