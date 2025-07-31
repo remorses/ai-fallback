@@ -383,32 +383,3 @@ test(
     },
     1000 * 20,
 )
-
-const models = [opeani('gpt-4.1-mini'), anthropic('claude-3-haiku-20240307')]
-let currentModelIndex = 0
-const res = streamText({
-    model: models[currentModelIndex],
-    onError: ({ error, retry }) => {
-        if (error?.message?.includes('Overloaded')) {
-            retry()
-        }
-    },
-    prepareStep({ model, error }) {
-        if (error) {
-            // cycle trough models on error
-            currentModelIndex += 1
-            currentModelIndex %= models.length
-        }
-        return {
-            model: models[currentModelIndex],
-            // only activate tools that work with current provider via activeTools
-        }
-    },
-    messages: [
-        {
-            role: 'user',
-            content:
-                'say "hello" 3 times with spaces. exactly that and nothing else',
-        },
-    ],
-})
