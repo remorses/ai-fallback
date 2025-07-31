@@ -1,4 +1,3 @@
-
 import {
     LanguageModelV2,
     LanguageModelV2CallOptions,
@@ -225,9 +224,14 @@ export class FallbackModel implements LanguageModelV2 {
                                     self.modelId,
                                 )
                             }
+                            const initialModel = self.currentModelIndex
                             if (!hasStreamedAny || self.retryAfterOutput) {
-                                // If nothing was streamed yet, switch models and retry
                                 self.switchToNextModel()
+                                // if we tried all fallback models, we throw the error
+                                if (self.currentModelIndex === initialModel) {
+                                    return controller.error(error)
+                                }
+
                                 try {
                                     const nextResult =
                                         await self.doStream(options)
