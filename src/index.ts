@@ -7,6 +7,8 @@ import {
     LanguageModelV2Content,
     LanguageModelV2Usage,
     SharedV2ProviderMetadata,
+    APICallError,
+    AISDKError,
 } from '@ai-sdk/provider'
 
 interface Settings {
@@ -190,62 +192,33 @@ export class FallbackModel implements LanguageModelV2 {
             const wrappedStream = new ReadableStream<LanguageModelV2StreamPart>(
                 {
                     async start(controller) {
-                        try {
-                            const reader = result.stream.getReader()
+                        console.log(`starting`)
+                        const reader = result.stream.getReader()
 
-                            while (true) {
-                                const result = await reader.read()
+                        while (true) {
+                            const result = await reader.read()
 
-                                const { done, value } = result
-                                if (
-                                    !hasStreamedAny &&
-                                    value &&
-                                    typeof value === 'object' &&
-                                    'error' in value
-                                ) {
-                                    const error = value.error as any
-                                    if (shouldRetry(error)) {
-                                        throw error
-                                    }
-                                }
-
-                                if (done) break
-                                controller.enqueue(value)
-
-                                if (value?.type !== 'stream-start') {
-                                    hasStreamedAny = true
+                            const { done, value } = result
+                            if (
+                                !hasStreamedAny &&
+                                value &&
+                                typeof value === 'object' &&
+                                'error' in value
+                            ) {
+                                const error = value.error as any
+                                if (shouldRetry(error)) {
+                                    self.switchToNextModel()
                                 }
                             }
-                            controller.close()
-                        } catch (error) {
-                            if (self.settings.onError) {
-                                await self.settings.onError(
-                                    error as Error,
-                                    self.modelId,
-                                )
+
+                            if (done) break
+                            controller.enqueue(value)
+
+                            if (value?.type !== 'stream-start') {
+                                hasStreamedAny = true
                             }
-                            if (!hasStreamedAny || self.retryAfterOutput) {
-                                // If nothing was streamed yet, switch models and retry
-                                self.switchToNextModel()
-                                try {
-                                    const nextResult =
-                                        await self.doStream(options)
-                                    const nextReader =
-                                        nextResult.stream.getReader()
-                                    while (true) {
-                                        const { done, value } =
-                                            await nextReader.read()
-                                        if (done) break
-                                        controller.enqueue(value)
-                                    }
-                                    controller.close()
-                                } catch (nextError) {
-                                    controller.error(nextError)
-                                }
-                                return
-                            }
-                            controller.error(error)
                         }
+                        controller.close()
                     },
                 },
             )
