@@ -227,9 +227,11 @@ export class FallbackModel implements LanguageModelV2 {
                             const initialModel = self.currentModelIndex
                             if (!hasStreamedAny || self.retryAfterOutput) {
                                 self.switchToNextModel()
-                                // if we tried all fallback models, we throw the error
-                                if (self.currentModelIndex === initialModel) {
-                                    return controller.error(error)
+
+                                // TODO maybe should be initialModel instead
+                                if (self.currentModelIndex === 0) {
+                                    controller.error(error)
+                                    return
                                 }
 
                                 try {

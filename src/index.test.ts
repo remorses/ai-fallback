@@ -383,3 +383,88 @@ test(
     },
     1000 * 20,
 )
+
+test(
+    'Handle consecutive errors from reader.read() and retries with fallback model',
+    async () => {
+        const encounteredErrors: any[] = []
+
+        const model = createFallback({
+            models: [
+                new MockLanguageModelV2({
+                    doStream: async () => ({
+                        stream: convertArrayToReadableStream([
+                            {
+                                type: 'stream-start',
+                            },
+                            {
+                                type: 'error',
+                                error: 'Overloaded',
+                            },
+                        ] as LanguageModelV2StreamPart[]),
+                    }),
+                }),
+                new MockLanguageModelV2({
+                    doStream: async () => ({
+                        stream: convertArrayToReadableStream([
+                            {
+                                type: 'stream-start',
+                            },
+                            {
+                                type: 'error',
+                                error: 'Overloaded',
+                            },
+                        ] as LanguageModelV2StreamPart[]),
+                    }),
+                }),
+                new MockLanguageModelV2({
+                    doStream: async () => ({
+                        stream: convertArrayToReadableStream([
+                            {
+                                type: 'stream-start',
+                            },
+                            {
+                                type: 'error',
+                                error: 'Overloaded',
+                            },
+                        ] as LanguageModelV2StreamPart[]),
+                    }),
+                }),
+            ],
+            shouldRetryThisError: (error) => {
+                encounteredErrors.push(error)
+                return true
+            },
+            onError: async (error, modelId) => {
+                console.log(`Error from model ${modelId}:`, error)
+            },
+        })
+
+        model.currentModelIndex = 0
+
+        const res = streamText({
+            model,
+
+            temperature: 0,
+            onError: ({ error }) => {
+                console.log('Error in streamText:', error)
+                throw error
+            },
+
+            messages: [
+                {
+                    role: 'user',
+                    content:
+                        'say "hello" 3 times with spaces. exactly that and nothing else',
+                },
+            ],
+        })
+
+        // Since all models return errors, this should throw after trying all models
+        await res.consumeStream()
+        expect(encounteredErrors.length).toBe(3)
+        expect(encounteredErrors.every(err => err === 'Overloaded')).toBe(true)
+        expect(model.currentModelIndex).toBe(0)
+    },
+    1000 * 20,
+)
