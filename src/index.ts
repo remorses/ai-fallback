@@ -228,6 +228,13 @@ export class FallbackModel implements LanguageModelV2 {
                             if (!hasStreamedAny || self.retryAfterOutput) {
                                 // If nothing was streamed yet, switch models and retry
                                 self.switchToNextModel()
+
+                                 // If we've tried all models, throw the last error
+                                 if (self.currentModelIndex === 0) {
+                                    controller.error(error)
+                                    return
+                                }
+                                
                                 try {
                                     const nextResult =
                                         await self.doStream(options)
@@ -239,7 +246,7 @@ export class FallbackModel implements LanguageModelV2 {
                                         if (done) break
                                         controller.enqueue(value)
                                     }
-                                    controller.close()
+                                    controller.close() 
                                 } catch (nextError) {
                                     controller.error(nextError)
                                 }
