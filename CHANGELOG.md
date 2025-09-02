@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 1.0.3
+
+### Patch Changes
+
+-   fix infinite retries
+
 ## 1.0.2
 
 ### Patch Changes
