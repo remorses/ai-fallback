@@ -247,7 +247,7 @@ test('fallback switches models on stream error before any output', async () => {
     expect(model.currentModelIndex).toBe(1) // Should have switched to second model
 })
 
-test('fallback switches models on stream error after some output', async () => {
+test('fallback switches models on stream error after some output', { timeout: 10000 }, async () => {
     // Create OpenAI client that errors after first token
     const errorOpenAI = createOpenAI({
         apiKey: process.env.OPENAI_KEY,
