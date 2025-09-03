@@ -190,8 +190,13 @@ export class FallbackModel implements LanguageModelV2 {
             const wrappedStream = new ReadableStream<LanguageModelV2StreamPart>(
                 {
                     async start(controller) {
+                        let reader: ReadableStreamDefaultReader<LanguageModelV2StreamPart> | null =
+                            null
+                        let nextReader: ReadableStreamDefaultReader<LanguageModelV2StreamPart> | null =
+                            null
+
                         try {
-                            const reader = result.stream.getReader()
+                            reader = result.stream.getReader()
 
                             while (true) {
                                 const result = await reader.read()
@@ -224,11 +229,11 @@ export class FallbackModel implements LanguageModelV2 {
                                     self.modelId,
                                 )
                             }
-                            const initialModel = self.currentModelIndex
+
                             if (!hasStreamedAny || self.retryAfterOutput) {
                                 self.switchToNextModel()
 
-                                // TODO maybe should be initialModel instead
+                                // TODO should be initialModel instead?
                                 if (self.currentModelIndex === 0) {
                                     controller.error(error)
                                     return
@@ -237,8 +242,7 @@ export class FallbackModel implements LanguageModelV2 {
                                 try {
                                     const nextResult =
                                         await self.doStream(options)
-                                    const nextReader =
-                                        nextResult.stream.getReader()
+                                    nextReader = nextResult.stream.getReader()
                                     while (true) {
                                         const { done, value } =
                                             await nextReader.read()
@@ -248,10 +252,22 @@ export class FallbackModel implements LanguageModelV2 {
                                     controller.close()
                                 } catch (nextError) {
                                     controller.error(nextError)
+                                } finally {
+                                    try {
+                                        nextReader?.releaseLock()
+                                    } catch (e) {
+                                        // Ignore release errors
+                                    }
                                 }
                                 return
                             }
                             controller.error(error)
+                        } finally {
+                            try {
+                                reader?.releaseLock()
+                            } catch (e) {
+                                // Ignore release errors
+                            }
                         }
                     },
                 },
