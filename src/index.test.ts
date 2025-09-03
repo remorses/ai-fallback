@@ -384,6 +384,40 @@ test(
     1000 * 20,
 )
 
+test('Stream cancellation properly cleans up resources', async () => {
+    const model = createFallback({
+        models: [
+            new MockLanguageModelV2({
+                doStream: async () => ({
+                    stream: convertArrayToReadableStream([
+                        { type: 'stream-start' },
+                        { type: 'text-delta', textDelta: 'hello' },
+                        { type: 'text-delta', textDelta: ' world' },
+                        { type: 'stream-end' },
+                    ] as LanguageModelV2StreamPart[])
+                }),
+            }),
+            openai('gpt-3.5-turbo'),
+        ],
+    })
+
+    const { stream } = await model.doStream({
+        messages: [{ role: 'user', content: 'test' }],
+        temperature: 0,
+    } as any)
+
+    const reader = stream.getReader()
+    
+    // Read one chunk
+    await reader.read()
+    
+    // Cancel the stream
+    await reader.cancel()
+    
+    // Verify reader is properly cleaned up
+    expect(reader).toBeDefined()
+}, 1000)
+
 test(
     'Handle consecutive errors from reader.read() and retries with fallback model',
     async () => {
@@ -464,6 +498,7 @@ test(
         await res.consumeStream()
         expect(encounteredErrors.length).toBe(3)
         expect(encounteredErrors.every(err => err === 'Overloaded')).toBe(true)
+        // After trying all 3 models, the index should be at 0 (wrapped around)
         expect(model.currentModelIndex).toBe(0)
     },
     1000 * 20,

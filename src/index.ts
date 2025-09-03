@@ -186,19 +186,18 @@ export class FallbackModel implements LanguageModelV2 {
                 )
 
             let hasStreamedAny = false
+            let aborted = false
+            let reader: ReadableStreamDefaultReader<LanguageModelV2StreamPart> | null = null
+            let nextReader: ReadableStreamDefaultReader<LanguageModelV2StreamPart> | null = null
+            
             // Wrap the stream to handle errors and switch providers if needed
             const wrappedStream = new ReadableStream<LanguageModelV2StreamPart>(
                 {
                     async start(controller) {
-                        let reader: ReadableStreamDefaultReader<LanguageModelV2StreamPart> | null =
-                            null
-                        let nextReader: ReadableStreamDefaultReader<LanguageModelV2StreamPart> | null =
-                            null
-
                         try {
                             reader = result.stream.getReader()
 
-                            while (true) {
+                            while (!aborted) {
                                 const result = await reader.read()
 
                                 const { done, value } = result
@@ -221,8 +220,15 @@ export class FallbackModel implements LanguageModelV2 {
                                     hasStreamedAny = true
                                 }
                             }
-                            controller.close()
+                            
+                            if (!aborted) {
+                                controller.close()
+                            }
                         } catch (error) {
+                            if (aborted) {
+                                return
+                            }
+                            
                             if (self.settings.onError) {
                                 await self.settings.onError(
                                     error as Error,
@@ -233,7 +239,6 @@ export class FallbackModel implements LanguageModelV2 {
                             if (!hasStreamedAny || self.retryAfterOutput) {
                                 self.switchToNextModel()
 
-                                // TODO should be initialModel instead?
                                 if (self.currentModelIndex === 0) {
                                     controller.error(error)
                                     return
@@ -243,30 +248,64 @@ export class FallbackModel implements LanguageModelV2 {
                                     const nextResult =
                                         await self.doStream(options)
                                     nextReader = nextResult.stream.getReader()
-                                    while (true) {
+                                    
+                                    while (!aborted) {
                                         const { done, value } =
                                             await nextReader.read()
                                         if (done) break
                                         controller.enqueue(value)
                                     }
-                                    controller.close()
+                                    
+                                    if (!aborted) {
+                                        controller.close()
+                                    }
                                 } catch (nextError) {
-                                    controller.error(nextError)
+                                    if (!aborted) {
+                                        controller.error(nextError)
+                                    }
                                 } finally {
-                                    try {
-                                        nextReader?.releaseLock()
-                                    } catch (e) {
-                                        // Ignore release errors
+                                    if (nextReader) {
+                                        try {
+                                            nextReader.releaseLock()
+                                        } catch (e) {
+                                            // Ignore release errors
+                                        }
                                     }
                                 }
                                 return
                             }
                             controller.error(error)
                         } finally {
+                            if (reader) {
+                                try {
+                                    reader.releaseLock()
+                                } catch (e) {
+                                    // Ignore release errors
+                                }
+                            }
+                        }
+                    },
+                    
+                    cancel() {
+                        // Set abort flag
+                        aborted = true
+                        
+                        // Cancel and release readers
+                        if (reader) {
                             try {
-                                reader?.releaseLock()
+                                reader.cancel()
+                                reader.releaseLock()
                             } catch (e) {
-                                // Ignore release errors
+                                // Ignore errors during cleanup
+                            }
+                        }
+                        
+                        if (nextReader) {
+                            try {
+                                nextReader.cancel()
+                                nextReader.releaseLock()
+                            } catch (e) {
+                                // Ignore errors during cleanup
                             }
                         }
                     },
