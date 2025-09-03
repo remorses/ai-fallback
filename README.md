@@ -48,6 +48,46 @@ const model = createFallback({
 
 ---
 
+### Provider Metadata
+
+Track which model actually handled your request:
+
+#### For generateText
+
+```javascript
+const result = await generateText({
+    model,
+    messages: [{ role: 'user', content: 'Hello' }],
+})
+
+// Access the fallback metadata
+console.log(result.response?.providerMetadata?.fallback)
+// Output: {
+//   modelUsed: 'gpt-3.5-turbo',  // The actual model that handled the request
+//   modelIndex: 0,                // Index in the models array
+//   provider: 'openai'            // Provider name
+// }
+```
+
+#### For streamText
+
+```javascript
+const stream = await streamText({
+    model,
+    messages: [{ role: 'user', content: 'Hello' }],
+})
+
+// Access the fallback metadata
+console.log(stream.response?.fallbackMetadata)
+// Output: {
+//   modelUsed: 'claude-3-haiku-20240307',
+//   modelIndex: 1,
+//   provider: 'anthropic'
+// }
+```
+
+---
+
 ### Usage
 
 #### Create a Fallback Model

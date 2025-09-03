@@ -165,9 +165,22 @@ export class FallbackModel implements LanguageModelV2 {
         warnings: LanguageModelV2CallWarning[]
     }> {
         this.checkAndResetModel()
-        return this.retry(() =>
-            this.settings.models[this.currentModelIndex].doGenerate(options),
-        )
+        return this.retry(async () => {
+            const result = await this.settings.models[this.currentModelIndex].doGenerate(options)
+            
+            // Add fallback model information to providerMetadata
+            return {
+                ...result,
+                providerMetadata: {
+                    ...result.providerMetadata,
+                    fallback: {
+                        modelUsed: this.settings.models[this.currentModelIndex].modelId,
+                        modelIndex: this.currentModelIndex,
+                        provider: this.settings.models[this.currentModelIndex].provider,
+                    }
+                }
+            }
+        })
     }
 
     doStream(options: LanguageModelV2CallOptions): PromiseLike<{
@@ -180,8 +193,9 @@ export class FallbackModel implements LanguageModelV2 {
         const shouldRetry =
             this.settings.shouldRetryThisError || defaultShouldRetryThisError
         return this.retry(async () => {
+            const currentModel = self.settings.models[this.currentModelIndex]
             const result =
-                await self.settings.models[this.currentModelIndex].doStream(
+                await currentModel.doStream(
                     options,
                 )
 
@@ -277,7 +291,14 @@ export class FallbackModel implements LanguageModelV2 {
                 ...result,
                 stream: wrappedStream,
                 request: result.request,
-                response: result.response,
+                response: {
+                    ...result.response,
+                    fallbackMetadata: {
+                        modelUsed: currentModel.modelId,
+                        modelIndex: self.currentModelIndex,
+                        provider: currentModel.provider,
+                    }
+                },
             }
         })
     }
