@@ -201,7 +201,7 @@ test('fallback switches models on stream error before any output', async () => {
     // Create OpenAI client that errors immediately
     const errorOpenAI = createOpenAI({
         apiKey: process.env.OPENAI_KEY,
-        fetch: async (url, options) => {
+        fetch: (async (url, options) => {
             const stream = new ReadableStream({
                 start(controller) {
                     // Error immediately before streaming any data
@@ -214,7 +214,7 @@ test('fallback switches models on stream error before any output', async () => {
                 // status: result.status,
                 // statusText: result.statusText,
             })
-        },
+        }) as typeof fetch,
     })
 
     let err
@@ -251,7 +251,7 @@ test('fallback switches models on stream error after some output', { timeout: 10
     // Create OpenAI client that errors after first token
     const errorOpenAI = createOpenAI({
         apiKey: process.env.OPENAI_KEY,
-        fetch: async (url, options) => {
+        fetch: (async (url, options) => {
             const result = await fetch(url, options)
             const originalBody = result.body
             if (!originalBody) throw new Error('No response body')
@@ -281,7 +281,7 @@ test('fallback switches models on stream error after some output', { timeout: 10
                 status: result.status,
                 statusText: result.statusText,
             })
-        },
+        }) as typeof fetch,
     })
 
     let err
