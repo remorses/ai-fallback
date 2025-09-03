@@ -21,18 +21,18 @@
     "author": "Tommaso De Rossi, morse <beats.by.morse@gmail.com>",
     "license": "",
     "dependencies": {
-        "@ai-sdk/provider": "2.0.0-beta.1",
-        "@ai-sdk/provider-utils": "3.0.0-beta.1"
+        "@ai-sdk/provider": "2.0.0",
+        "@ai-sdk/provider-utils": "3.0.7"
     },
     "devDependencies": {
-        "@ai-sdk/anthropic": "2.0.0-beta.13",
-        "@ai-sdk/groq": "2.0.0-beta.12",
-        "@ai-sdk/openai": "2.0.0-beta.16",
-        "@changesets/cli": "^2.29.5",
-        "@types/node": "^24.0.4",
-        "ai": "5.0.0-beta.34",
-        "typescript": "^5.8.3",
+        "@ai-sdk/anthropic": "2.0.9",
+        "@ai-sdk/groq": "2.0.16",
+        "@ai-sdk/openai": "2.0.23",
+        "@changesets/cli": "^2.29.6",
+        "@types/node": "^24.3.0",
+        "ai": "5.0.30",
+        "typescript": "^5.9.2",
         "vitest": "^3.2.4",
-        "zod": "^3.25.67"
+        "zod": "^4.1.5"
     }
 }
