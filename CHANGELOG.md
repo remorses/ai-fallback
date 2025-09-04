@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 1.0.4
+
+### Patch Changes
+
+-   Use latest version of ai packages
+
 ## 1.0.3
 
 ### Patch Changes
