@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 1.0.5
+
+### Patch Changes
+
+-   Export defaultShouldRetryThisError
+
 ## 1.0.4
 
 ### Patch Changes
