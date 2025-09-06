@@ -51,7 +51,7 @@ const retryableErrors = [
     '504', // Gateway Timeout
 ]
 
-function defaultShouldRetryThisError(error: any): boolean {
+export function defaultShouldRetryThisError(error: any): boolean {
     let statusCode = error?.['statusCode']
 
     if (
