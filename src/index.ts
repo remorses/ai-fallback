@@ -28,6 +28,7 @@ const retryableStatusCodes = [
     409, // conflict
     413, // payload too large
     429, // too many requests/rate limits
+    498, // groq flex rate limit https://console.groq.com/docs/errors
     500, // server error (and above)
 ]
 // Common error messages/codes that indicate server overload or temporary issues
