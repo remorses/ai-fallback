@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 1.0.7
+
+### Patch Changes
+
+-   handle groq status 498
+
 ## 1.0.6
 
 ### Patch Changes
