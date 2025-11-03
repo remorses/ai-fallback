@@ -1,5 +1,11 @@
 # ai-fallback
 
+## 1.0.8
+
+### Patch Changes
+
+-   Handle more error string variants for rate limiting (camelCase, PascalCase, with spaces, without underscores)
+
 ## 1.0.7
 
 ### Patch Changes
