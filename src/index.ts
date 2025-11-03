@@ -37,9 +37,13 @@ const retryableErrors = [
     'service unavailable',
     'bad gateway',
     'too many requests',
+    'toomanyrequests', // camelCase/PascalCase variant
+    'too many requests', // camelCase/PascalCase variant
     'internal server error',
     'gateway timeout',
     'rate_limit',
+    'ratelimit', // variant without underscore
+    'rate limit', // variant with space
     'wrong-key',
     'unexpected',
     'capacity',
