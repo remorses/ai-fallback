@@ -1,16 +1,13 @@
 import {
-    LanguageModelV2,
-    LanguageModelV2CallOptions,
-    LanguageModelV2CallWarning,
-    LanguageModelV2FinishReason,
-    LanguageModelV2StreamPart,
-    LanguageModelV2Content,
-    LanguageModelV2Usage,
-    SharedV2ProviderMetadata,
+    LanguageModelV3,
+    LanguageModelV3CallOptions,
+    LanguageModelV3StreamPart,
+    LanguageModelV3GenerateResult,
+    LanguageModelV3StreamResult,
 } from '@ai-sdk/provider'
 
 interface Settings {
-    models: Array<LanguageModelV2>
+    models: Array<LanguageModelV3>
     retryAfterOutput?: boolean
     modelResetInterval?: number
     shouldRetryThisError?: (error: Error) => boolean
@@ -77,8 +74,8 @@ export function defaultShouldRetryThisError(error: any): boolean {
     return false
 }
 
-export class FallbackModel implements LanguageModelV2 {
-    readonly specificationVersion = 'v2'
+export class FallbackModel implements LanguageModelV3 {
+    readonly specificationVersion = 'v3' as const
 
     get supportedUrls():
         | Record<string, RegExp[]>
@@ -155,31 +152,14 @@ export class FallbackModel implements LanguageModelV2 {
         } while (true)
     }
 
-    doGenerate(options: LanguageModelV2CallOptions): PromiseLike<{
-        content: LanguageModelV2Content[]
-        finishReason: LanguageModelV2FinishReason
-        usage: LanguageModelV2Usage
-        providerMetadata?: SharedV2ProviderMetadata
-        request?: { body?: unknown }
-        response?: {
-            headers?: Record<string, string>
-            id?: string
-            timestamp?: Date
-            modelId?: string
-        }
-        warnings: LanguageModelV2CallWarning[]
-    }> {
+    doGenerate(options: LanguageModelV3CallOptions): PromiseLike<LanguageModelV3GenerateResult> {
         this.checkAndResetModel()
         return this.retry(() =>
             this.settings.models[this.currentModelIndex].doGenerate(options),
         )
     }
 
-    doStream(options: LanguageModelV2CallOptions): PromiseLike<{
-        stream: ReadableStream<LanguageModelV2StreamPart>
-        request?: { body?: unknown }
-        response?: { headers?: Record<string, string> }
-    }> {
+    doStream(options: LanguageModelV3CallOptions): PromiseLike<LanguageModelV3StreamResult> {
         this.checkAndResetModel()
         let self = this
         const shouldRetry =
@@ -192,12 +172,12 @@ export class FallbackModel implements LanguageModelV2 {
 
             let hasStreamedAny = false
             // Wrap the stream to handle errors and switch providers if needed
-            const wrappedStream = new ReadableStream<LanguageModelV2StreamPart>(
+            const wrappedStream = new ReadableStream<LanguageModelV3StreamPart>(
                 {
                     async start(controller) {
-                        let reader: ReadableStreamDefaultReader<LanguageModelV2StreamPart> | null =
+                        let reader: ReadableStreamDefaultReader<LanguageModelV3StreamPart> | null =
                             null
-                        let nextReader: ReadableStreamDefaultReader<LanguageModelV2StreamPart> | null =
+                        let nextReader: ReadableStreamDefaultReader<LanguageModelV3StreamPart> | null =
                             null
 
                         try {
