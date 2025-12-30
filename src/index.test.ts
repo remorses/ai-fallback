@@ -7,10 +7,9 @@ import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateText, streamText, streamObject, tool } from 'ai'
 import { convertArrayToReadableStream } from '@ai-sdk/provider-utils/test'
 import {
-    LanguageModelV2StreamPart,
-    LanguageModelV2CallWarning,
+    LanguageModelV3StreamPart,
 } from '@ai-sdk/provider'
-import { MockLanguageModelV2 } from './mock-model.js'
+import { MockLanguageModelV3 } from './mock-model.js'
 
 const openai = createOpenAI({
     apiKey: process.env.OPENAI_KEY,
@@ -327,7 +326,7 @@ test(
 
         const model = createFallback({
             models: [
-                new MockLanguageModelV2({
+                new MockLanguageModelV3({
                     doStream: async () => ({
                         stream: convertArrayToReadableStream([
                             {
@@ -337,7 +336,7 @@ test(
                                 type: 'error',
                                 error: 'Overloaded',
                             },
-                        ] as LanguageModelV2StreamPart[]),
+                        ] as LanguageModelV3StreamPart[]),
                     }),
                 }),
                 openai('gpt-4.1-mini'),
@@ -391,7 +390,7 @@ test(
 
         const model = createFallback({
             models: [
-                new MockLanguageModelV2({
+                new MockLanguageModelV3({
                     doStream: async () => ({
                         stream: convertArrayToReadableStream([
                             {
@@ -401,10 +400,10 @@ test(
                                 type: 'error',
                                 error: 'Overloaded',
                             },
-                        ] as LanguageModelV2StreamPart[]),
+                        ] as LanguageModelV3StreamPart[]),
                     }),
                 }),
-                new MockLanguageModelV2({
+                new MockLanguageModelV3({
                     doStream: async () => ({
                         stream: convertArrayToReadableStream([
                             {
@@ -414,10 +413,10 @@ test(
                                 type: 'error',
                                 error: 'Overloaded',
                             },
-                        ] as LanguageModelV2StreamPart[]),
+                        ] as LanguageModelV3StreamPart[]),
                     }),
                 }),
-                new MockLanguageModelV2({
+                new MockLanguageModelV3({
                     doStream: async () => ({
                         stream: convertArrayToReadableStream([
                             {
@@ -427,7 +426,7 @@ test(
                                 type: 'error',
                                 error: 'Overloaded',
                             },
-                        ] as LanguageModelV2StreamPart[]),
+                        ] as LanguageModelV3StreamPart[]),
                     }),
                 }),
             ],
