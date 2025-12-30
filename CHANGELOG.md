@@ -1,5 +1,14 @@
 # ai-fallback
 
+## 2.0.0
+
+### Major Changes
+
+-   Upgrade to AI SDK v6 (LanguageModelV3)
+-   Update `@ai-sdk/provider` to 3.0.0
+-   Update `@ai-sdk/provider-utils` to 4.0.1
+-   Change specification version from `v2` to `v3`
+
 ## 1.0.8
 
 ### Patch Changes

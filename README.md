@@ -4,8 +4,9 @@ Automatically switch between AI model providers when one experiences downtime or
 
 > [!warning]
 > **Version compatibility:**
-> - Use `ai-fallback` **version 0** for **AI SDK v4**.<br>
-> - Use `ai-fallback` **version 1** for **AI SDK v5** (currently in beta).
+> - Use `ai-fallback` **version 0** for **AI SDK v4**
+> - Use `ai-fallback` **version 1** for **AI SDK v5**
+> - Use `ai-fallback` **version 2** for **AI SDK v6**
 
 #### Why?
 
