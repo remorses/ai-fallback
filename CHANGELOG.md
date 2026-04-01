@@ -1,5 +1,13 @@
 # ai-fallback
 
+## 2.0.1
+
+### Patch Changes
+
+1. **Softened peer dependencies** — `@ai-sdk/provider` and `@ai-sdk/provider-utils` are now `peerDependencies` with `>=` ranges instead of pinned `dependencies`. This avoids version conflicts when your project uses a newer patch of these packages.
+
+2. **Updated AI SDK packages to latest** — bumped all AI SDK dev dependencies: `ai` to `6.0.142`, `@ai-sdk/anthropic` to `3.0.64`, `@ai-sdk/openai` to `3.0.49`, `@ai-sdk/groq` to `3.0.31`, `@ai-sdk/provider` to `3.0.8`, `@ai-sdk/provider-utils` to `4.0.21`.
+
 ## 2.0.0
 
 ### Major Changes
