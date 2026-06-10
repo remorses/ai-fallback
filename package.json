@@ -19,7 +19,7 @@
     ],
     "keywords": [],
     "author": "Tommaso De Rossi, morse <beats.by.morse@gmail.com>",
-    "license": "",
+    "license": "MIT",
     "peerDependencies": {
         "@ai-sdk/provider": ">=3.0.0",
         "@ai-sdk/provider-utils": ">=4.0.0"
