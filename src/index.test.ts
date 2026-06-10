@@ -7,6 +7,7 @@ import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateText, streamText, streamObject, tool } from 'ai'
 import { convertArrayToReadableStream } from '@ai-sdk/provider-utils/test'
 import {
+    LanguageModelV3GenerateResult,
     LanguageModelV3StreamPart,
 } from '@ai-sdk/provider'
 import { MockLanguageModelV3 } from './mock-model.js'
@@ -56,6 +57,97 @@ test('switches model on error', async () => {
     expect(model.modelId).toBe('claude-3-haiku-20240307')
     expect(result.text).toBeTruthy()
     model.currentModelIndex = 0
+})
+
+test('uses model-specific providerOptions when switching fallback models', async () => {
+    const overloadedError = Object.assign(new Error('Overloaded'), {
+        statusCode: 429,
+    })
+    const generateResult: LanguageModelV3GenerateResult = {
+        content: [{ type: 'text', text: 'ok' }],
+        finishReason: { unified: 'stop', raw: 'stop' },
+        usage: {
+            inputTokens: {
+                total: 1,
+                noCache: 1,
+                cacheRead: undefined,
+                cacheWrite: undefined,
+            },
+            outputTokens: {
+                total: 1,
+                text: 1,
+                reasoning: undefined,
+            },
+        },
+        warnings: [],
+    }
+
+    const primary = new MockLanguageModelV3({
+        provider: 'google',
+        modelId: 'gemini-3-pro-preview',
+        doGenerate: async () => {
+            throw overloadedError
+        },
+    })
+    const fallback = new MockLanguageModelV3({
+        provider: 'google',
+        modelId: 'gemini-2.5-flash-preview-09-2025',
+        doGenerate: generateResult,
+    })
+
+    const model = createFallback({
+        models: [
+            {
+                model: primary,
+                providerOptions: {
+                    google: {
+                        thinkingConfig: { thinkingBudget: 32768 },
+                    },
+                },
+            },
+            {
+                model: fallback,
+                providerOptions: {
+                    google: {
+                        thinkingConfig: { thinkingBudget: 24576 },
+                    },
+                },
+            },
+        ],
+    })
+
+    const result = await model.doGenerate({
+        prompt: [],
+        providerOptions: {
+            google: {
+                cachedContent: 'shared-cache-key',
+            },
+            openai: {
+                reasoningEffort: 'low',
+            },
+        },
+    })
+
+    expect(result).toBe(generateResult)
+    expect(model.currentModelIndex).toBe(1)
+    expect(primary.doGenerateCalls[0].providerOptions).toEqual({
+        google: {
+            cachedContent: 'shared-cache-key',
+            thinkingConfig: { thinkingBudget: 32768 },
+        },
+        openai: {
+            reasoningEffort: 'low',
+        },
+    })
+    expect(fallback.doGenerateCalls[0].providerOptions).toEqual({
+        google: {
+            cachedContent: 'shared-cache-key',
+            thinkingConfig: { thinkingBudget: 24576 },
+        },
+        openai: {
+            reasoningEffort: 'low',
+        },
+    })
 })
 
 test('groq switches model on error, switches to third model', async () => {
