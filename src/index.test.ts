@@ -22,7 +22,7 @@ const anthropic = createAnthropic({
 
 test('createProvider works', async () => {
     const model = createFallback({
-        models: [anthropic('claude-3-haiku-20240307'), openai('gpt-3.5-turbo')],
+        models: [anthropic('claude-sonnet-4-20250514'), openai('gpt-3.5-turbo')],
     })
 
     const result = await generateText({
@@ -40,7 +40,7 @@ test('switches model on error', async () => {
     const model = createFallback({
         models: [
             createOpenAI({ apiKey: 'wrong-key' })('gpt-3.5-turbo'),
-            anthropic('claude-3-haiku-20240307'),
+            anthropic('claude-sonnet-4-20250514'),
         ],
     })
 
@@ -54,7 +54,7 @@ test('switches model on error', async () => {
 
     // After error with OpenAI, should have switched to Anthropic
     expect(model.currentModelIndex).toBe(1)
-    expect(model.modelId).toBe('claude-3-haiku-20240307')
+    expect(model.modelId).toBe('claude-sonnet-4-20250514')
     expect(result.text).toBeTruthy()
     model.currentModelIndex = 0
 })
@@ -155,7 +155,7 @@ test('groq switches model on error, switches to third model', async () => {
         models: [
             createGroq({ apiKey: 'wrong-key' })('gpt-3.5-turbo'),
             createOpenAI({ apiKey: 'wrong-key' })('gpt-3.5-turbo'),
-            anthropic('claude-3-haiku-20240307'),
+            anthropic('claude-sonnet-4-20250514'),
         ],
     })
 
@@ -169,7 +169,7 @@ test('groq switches model on error, switches to third model', async () => {
 
     // After error with OpenAI, should have switched to Anthropic
     expect(model.currentModelIndex).toBe(2)
-    expect(model.modelId).toMatchInlineSnapshot(`"claude-3-haiku-20240307"`)
+    expect(model.modelId).toMatchInlineSnapshot(`"claude-sonnet-4-20250514"`)
     expect(result.text).toBeTruthy()
     model.currentModelIndex = 0
 })
@@ -179,7 +179,7 @@ test('shouldRetryThisError works with non-existent model error', async () => {
     const model = createFallback({
         models: [
             openai('non-existent-model'),
-            anthropic('claude-3-haiku-20240307'),
+            anthropic('claude-sonnet-4-20250514'),
         ],
         shouldRetryThisError: (error) => {
             called = true
@@ -199,14 +199,14 @@ test('shouldRetryThisError works with non-existent model error', async () => {
 
     // Should switch to Anthropic after OpenAI error
     expect(model.currentModelIndex).toBe(1)
-    expect(model.modelId).toBe('claude-3-haiku-20240307')
+    expect(model.modelId).toBe('claude-sonnet-4-20250514')
     expect(result.text).toBeTruthy()
     model.currentModelIndex = 0
 })
 
 test('streamText works', async () => {
     const model = createFallback({
-        models: [anthropic('claude-3-haiku-20240307'), openai('gpt-3.5-turbo')],
+        models: [anthropic('claude-sonnet-4-20250514'), openai('gpt-3.5-turbo')],
     })
 
     const stream = await streamText({
@@ -226,7 +226,7 @@ test('streamText works', async () => {
 
 test('streamObject works', async () => {
     const model = createFallback({
-        models: [openai('gpt-4.1-mini'), anthropic('claude-3-haiku-20240307')],
+        models: [openai('gpt-4.1-mini'), anthropic('claude-sonnet-4-20250514')],
     })
 
     const stream = await streamObject({
@@ -432,7 +432,7 @@ test(
                     }),
                 }),
                 openai('gpt-4.1-mini'),
-                anthropic('claude-3-haiku-20240307'),
+                anthropic('claude-sonnet-4-20250514'),
             ],
             shouldRetryThisError: (error) => {
                 encounteredErrors.push(error)
