@@ -7,11 +7,16 @@ import {
 } from '@ai-sdk/provider'
 
 interface Settings {
-    models: Array<LanguageModelV3>
+    models: Array<LanguageModelV3 | FallbackModelSettings>
     retryAfterOutput?: boolean
     modelResetInterval?: number
     shouldRetryThisError?: (error: Error) => boolean
     onError?: (error: Error, modelId: string) => void | Promise<void>
+}
+
+export type FallbackModelSettings = {
+    model: LanguageModelV3
+    providerOptions?: LanguageModelV3CallOptions['providerOptions']
 }
 
 export function createFallback(settings: Settings): FallbackModel {
@@ -74,17 +79,47 @@ export function defaultShouldRetryThisError(error: any): boolean {
     return false
 }
 
+function getModel(model: LanguageModelV3 | FallbackModelSettings): LanguageModelV3 {
+    return 'model' in model ? model.model : model
+}
+
+function getModelProviderOptions(
+    model: LanguageModelV3 | FallbackModelSettings,
+): LanguageModelV3CallOptions['providerOptions'] | undefined {
+    return 'model' in model ? model.providerOptions : undefined
+}
+
+function mergeProviderOptions(
+    options?: LanguageModelV3CallOptions['providerOptions'],
+    modelOptions?: LanguageModelV3CallOptions['providerOptions'],
+): LanguageModelV3CallOptions['providerOptions'] | undefined {
+    if (!modelOptions) {
+        return options
+    }
+
+    const merged = { ...(options ?? {}) }
+
+    for (const [provider, providerOptions] of Object.entries(modelOptions)) {
+        merged[provider] = {
+            ...(merged[provider] ?? {}),
+            ...providerOptions,
+        }
+    }
+
+    return merged
+}
+
 export class FallbackModel implements LanguageModelV3 {
     readonly specificationVersion = 'v3' as const
 
     get supportedUrls():
         | Record<string, RegExp[]>
         | PromiseLike<Record<string, RegExp[]>> {
-        return this.settings.models[this.currentModelIndex].supportedUrls
+        return this.currentModel.supportedUrls
     }
 
     get modelId(): string {
-        return this.settings.models[this.currentModelIndex].modelId
+        return this.currentModel.modelId
     }
     readonly settings: Settings
 
@@ -103,7 +138,17 @@ export class FallbackModel implements LanguageModelV3 {
     }
 
     get provider(): string {
-        return this.settings.models[this.currentModelIndex].provider
+        return this.currentModel.provider
+    }
+
+    private get currentModel(): LanguageModelV3 {
+        return getModel(this.settings.models[this.currentModelIndex])
+    }
+
+    private get currentModelProviderOptions():
+        | LanguageModelV3CallOptions['providerOptions']
+        | undefined {
+        return getModelProviderOptions(this.settings.models[this.currentModelIndex])
     }
 
     private checkAndResetModel() {
@@ -152,10 +197,28 @@ export class FallbackModel implements LanguageModelV3 {
         } while (true)
     }
 
+    private optionsForCurrentModel(
+        options: LanguageModelV3CallOptions,
+    ): LanguageModelV3CallOptions {
+        const providerOptions = mergeProviderOptions(
+            options.providerOptions,
+            this.currentModelProviderOptions,
+        )
+
+        if (providerOptions === options.providerOptions) {
+            return options
+        }
+
+        return {
+            ...options,
+            providerOptions,
+        }
+    }
+
     doGenerate(options: LanguageModelV3CallOptions): PromiseLike<LanguageModelV3GenerateResult> {
         this.checkAndResetModel()
         return this.retry(() =>
-            this.settings.models[this.currentModelIndex].doGenerate(options),
+            this.currentModel.doGenerate(this.optionsForCurrentModel(options)),
         )
     }
 
@@ -166,8 +229,8 @@ export class FallbackModel implements LanguageModelV3 {
             this.settings.shouldRetryThisError || defaultShouldRetryThisError
         return this.retry(async () => {
             const result =
-                await self.settings.models[this.currentModelIndex].doStream(
-                    options,
+                await self.currentModel.doStream(
+                    self.optionsForCurrentModel(options),
                 )
 
             let hasStreamedAny = false

@@ -63,6 +63,33 @@ const model = createFallback({
 })
 ```
 
+#### Model-specific provider options
+
+Wrap a model in an object when a fallback needs different provider options:
+
+```javascript
+const model = createFallback({
+    models: [
+        {
+            model: google('gemini-3-pro-preview'),
+            providerOptions: {
+                google: {
+                    thinkingConfig: { thinkingBudget: 32768 },
+                },
+            },
+        },
+        {
+            model: google('gemini-2.5-flash-preview-09-2025'),
+            providerOptions: {
+                google: {
+                    thinkingConfig: { thinkingBudget: 24576 },
+                },
+            },
+        },
+    ],
+})
+```
+
 
 ---
 
