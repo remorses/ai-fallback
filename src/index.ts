@@ -1,13 +1,13 @@
 import {
-    LanguageModelV3,
-    LanguageModelV3CallOptions,
-    LanguageModelV3StreamPart,
-    LanguageModelV3GenerateResult,
-    LanguageModelV3StreamResult,
+    LanguageModelV4,
+    LanguageModelV4CallOptions,
+    LanguageModelV4StreamPart,
+    LanguageModelV4GenerateResult,
+    LanguageModelV4StreamResult,
 } from '@ai-sdk/provider'
 
 interface Settings {
-    models: Array<LanguageModelV3 | FallbackModelSettings>
+    models: Array<LanguageModelV4 | FallbackModelSettings>
     retryAfterOutput?: boolean
     modelResetInterval?: number
     shouldRetryThisError?: (error: Error) => boolean
@@ -15,8 +15,8 @@ interface Settings {
 }
 
 export type FallbackModelSettings = {
-    model: LanguageModelV3
-    providerOptions?: LanguageModelV3CallOptions['providerOptions']
+    model: LanguageModelV4
+    providerOptions?: LanguageModelV4CallOptions['providerOptions']
 }
 
 export function createFallback(settings: Settings): FallbackModel {
@@ -79,20 +79,20 @@ export function defaultShouldRetryThisError(error: any): boolean {
     return false
 }
 
-function getModel(model: LanguageModelV3 | FallbackModelSettings): LanguageModelV3 {
+function getModel(model: LanguageModelV4 | FallbackModelSettings): LanguageModelV4 {
     return 'model' in model ? model.model : model
 }
 
 function getModelProviderOptions(
-    model: LanguageModelV3 | FallbackModelSettings,
-): LanguageModelV3CallOptions['providerOptions'] | undefined {
+    model: LanguageModelV4 | FallbackModelSettings,
+): LanguageModelV4CallOptions['providerOptions'] | undefined {
     return 'model' in model ? model.providerOptions : undefined
 }
 
 function mergeProviderOptions(
-    options?: LanguageModelV3CallOptions['providerOptions'],
-    modelOptions?: LanguageModelV3CallOptions['providerOptions'],
-): LanguageModelV3CallOptions['providerOptions'] | undefined {
+    options?: LanguageModelV4CallOptions['providerOptions'],
+    modelOptions?: LanguageModelV4CallOptions['providerOptions'],
+): LanguageModelV4CallOptions['providerOptions'] | undefined {
     if (!modelOptions) {
         return options
     }
@@ -109,8 +109,8 @@ function mergeProviderOptions(
     return merged
 }
 
-export class FallbackModel implements LanguageModelV3 {
-    readonly specificationVersion = 'v3' as const
+export class FallbackModel implements LanguageModelV4 {
+    readonly specificationVersion = 'v4' as const
 
     get supportedUrls():
         | Record<string, RegExp[]>
@@ -141,12 +141,12 @@ export class FallbackModel implements LanguageModelV3 {
         return this.currentModel.provider
     }
 
-    private get currentModel(): LanguageModelV3 {
+    private get currentModel(): LanguageModelV4 {
         return getModel(this.settings.models[this.currentModelIndex])
     }
 
     private get currentModelProviderOptions():
-        | LanguageModelV3CallOptions['providerOptions']
+        | LanguageModelV4CallOptions['providerOptions']
         | undefined {
         return getModelProviderOptions(this.settings.models[this.currentModelIndex])
     }
@@ -198,8 +198,8 @@ export class FallbackModel implements LanguageModelV3 {
     }
 
     private optionsForCurrentModel(
-        options: LanguageModelV3CallOptions,
-    ): LanguageModelV3CallOptions {
+        options: LanguageModelV4CallOptions,
+    ): LanguageModelV4CallOptions {
         const providerOptions = mergeProviderOptions(
             options.providerOptions,
             this.currentModelProviderOptions,
@@ -215,14 +215,14 @@ export class FallbackModel implements LanguageModelV3 {
         }
     }
 
-    doGenerate(options: LanguageModelV3CallOptions): PromiseLike<LanguageModelV3GenerateResult> {
+    doGenerate(options: LanguageModelV4CallOptions): PromiseLike<LanguageModelV4GenerateResult> {
         this.checkAndResetModel()
         return this.retry(() =>
             this.currentModel.doGenerate(this.optionsForCurrentModel(options)),
         )
     }
 
-    doStream(options: LanguageModelV3CallOptions): PromiseLike<LanguageModelV3StreamResult> {
+    doStream(options: LanguageModelV4CallOptions): PromiseLike<LanguageModelV4StreamResult> {
         this.checkAndResetModel()
         let self = this
         const shouldRetry =
@@ -235,12 +235,12 @@ export class FallbackModel implements LanguageModelV3 {
 
             let hasStreamedAny = false
             // Wrap the stream to handle errors and switch providers if needed
-            const wrappedStream = new ReadableStream<LanguageModelV3StreamPart>(
+            const wrappedStream = new ReadableStream<LanguageModelV4StreamPart>(
                 {
                     async start(controller) {
-                        let reader: ReadableStreamDefaultReader<LanguageModelV3StreamPart> | null =
+                        let reader: ReadableStreamDefaultReader<LanguageModelV4StreamPart> | null =
                             null
-                        let nextReader: ReadableStreamDefaultReader<LanguageModelV3StreamPart> | null =
+                        let nextReader: ReadableStreamDefaultReader<LanguageModelV4StreamPart> | null =
                             null
 
                         try {

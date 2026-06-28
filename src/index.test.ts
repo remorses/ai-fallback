@@ -7,10 +7,10 @@ import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateText, streamText, streamObject, tool } from 'ai'
 import { convertArrayToReadableStream } from '@ai-sdk/provider-utils/test'
 import {
-    LanguageModelV3GenerateResult,
-    LanguageModelV3StreamPart,
+    LanguageModelV4GenerateResult,
+    LanguageModelV4StreamPart,
 } from '@ai-sdk/provider'
-import { MockLanguageModelV3 } from './mock-model.js'
+import { MockLanguageModelV4 } from './mock-model.js'
 
 const openai = createOpenAI({
     apiKey: process.env.OPENAI_KEY,
@@ -63,7 +63,7 @@ test('uses model-specific providerOptions when switching fallback models', async
     const overloadedError = Object.assign(new Error('Overloaded'), {
         statusCode: 429,
     })
-    const generateResult: LanguageModelV3GenerateResult = {
+    const generateResult: LanguageModelV4GenerateResult = {
         content: [{ type: 'text', text: 'ok' }],
         finishReason: { unified: 'stop', raw: 'stop' },
         usage: {
@@ -82,14 +82,14 @@ test('uses model-specific providerOptions when switching fallback models', async
         warnings: [],
     }
 
-    const primary = new MockLanguageModelV3({
+    const primary = new MockLanguageModelV4({
         provider: 'google',
         modelId: 'gemini-3-pro-preview',
         doGenerate: async () => {
             throw overloadedError
         },
     })
-    const fallback = new MockLanguageModelV3({
+    const fallback = new MockLanguageModelV4({
         provider: 'google',
         modelId: 'gemini-2.5-flash-preview-09-2025',
         doGenerate: generateResult,
@@ -418,17 +418,18 @@ test(
 
         const model = createFallback({
             models: [
-                new MockLanguageModelV3({
+                new MockLanguageModelV4({
                     doStream: async () => ({
                         stream: convertArrayToReadableStream([
                             {
                                 type: 'stream-start',
+                                warnings: [],
                             },
                             {
                                 type: 'error',
                                 error: 'Overloaded',
                             },
-                        ] as LanguageModelV3StreamPart[]),
+                        ] as LanguageModelV4StreamPart[]),
                     }),
                 }),
                 openai('gpt-4.1-mini'),
@@ -482,43 +483,46 @@ test(
 
         const model = createFallback({
             models: [
-                new MockLanguageModelV3({
+                new MockLanguageModelV4({
                     doStream: async () => ({
                         stream: convertArrayToReadableStream([
                             {
                                 type: 'stream-start',
+                                warnings: [],
                             },
                             {
                                 type: 'error',
                                 error: 'Overloaded',
                             },
-                        ] as LanguageModelV3StreamPart[]),
+                        ] as LanguageModelV4StreamPart[]),
                     }),
                 }),
-                new MockLanguageModelV3({
+                new MockLanguageModelV4({
                     doStream: async () => ({
                         stream: convertArrayToReadableStream([
                             {
                                 type: 'stream-start',
+                                warnings: [],
                             },
                             {
                                 type: 'error',
                                 error: 'Overloaded',
                             },
-                        ] as LanguageModelV3StreamPart[]),
+                        ] as LanguageModelV4StreamPart[]),
                     }),
                 }),
-                new MockLanguageModelV3({
+                new MockLanguageModelV4({
                     doStream: async () => ({
                         stream: convertArrayToReadableStream([
                             {
                                 type: 'stream-start',
+                                warnings: [],
                             },
                             {
                                 type: 'error',
                                 error: 'Overloaded',
                             },
-                        ] as LanguageModelV3StreamPart[]),
+                        ] as LanguageModelV4StreamPart[]),
                     }),
                 }),
             ],
