@@ -22,7 +22,7 @@ const anthropic = createAnthropic({
 
 test('createProvider works', async () => {
     const model = createFallback({
-        models: [anthropic('claude-sonnet-4-20250514'), openai('gpt-3.5-turbo')],
+        models: [anthropic('claude-haiku-4-5'), openai('gpt-4.1-mini')],
     })
 
     const result = await generateText({
@@ -33,14 +33,14 @@ test('createProvider works', async () => {
         ],
     })
 
-    expect(result.text).toMatchInlineSnapshot('"POSITIVE"')
+    expect(result.text).toContain('POSITIVE')
 })
 
 test('switches model on error', async () => {
     const model = createFallback({
         models: [
-            createOpenAI({ apiKey: 'wrong-key' })('gpt-3.5-turbo'),
-            anthropic('claude-sonnet-4-20250514'),
+            createOpenAI({ apiKey: 'wrong-key' })('gpt-4.1-mini'),
+            anthropic('claude-haiku-4-5'),
         ],
     })
 
@@ -54,7 +54,7 @@ test('switches model on error', async () => {
 
     // After error with OpenAI, should have switched to Anthropic
     expect(model.currentModelIndex).toBe(1)
-    expect(model.modelId).toBe('claude-sonnet-4-20250514')
+    expect(model.modelId).toBe('claude-haiku-4-5')
     expect(result.text).toBeTruthy()
     model.currentModelIndex = 0
 })
@@ -153,9 +153,9 @@ test('uses model-specific providerOptions when switching fallback models', async
 test('groq switches model on error, switches to third model', async () => {
     const model = createFallback({
         models: [
-            createGroq({ apiKey: 'wrong-key' })('gpt-3.5-turbo'),
-            createOpenAI({ apiKey: 'wrong-key' })('gpt-3.5-turbo'),
-            anthropic('claude-sonnet-4-20250514'),
+            createGroq({ apiKey: 'wrong-key' })('gpt-4.1-mini'),
+            createOpenAI({ apiKey: 'wrong-key' })('gpt-4.1-mini'),
+            anthropic('claude-haiku-4-5'),
         ],
     })
 
@@ -169,7 +169,7 @@ test('groq switches model on error, switches to third model', async () => {
 
     // After error with OpenAI, should have switched to Anthropic
     expect(model.currentModelIndex).toBe(2)
-    expect(model.modelId).toMatchInlineSnapshot(`"claude-sonnet-4-20250514"`)
+    expect(model.modelId).toMatchInlineSnapshot(`"claude-haiku-4-5"`)
     expect(result.text).toBeTruthy()
     model.currentModelIndex = 0
 })
@@ -179,7 +179,7 @@ test('shouldRetryThisError works with non-existent model error', async () => {
     const model = createFallback({
         models: [
             openai('non-existent-model'),
-            anthropic('claude-sonnet-4-20250514'),
+            anthropic('claude-haiku-4-5'),
         ],
         shouldRetryThisError: (error) => {
             called = true
@@ -199,14 +199,14 @@ test('shouldRetryThisError works with non-existent model error', async () => {
 
     // Should switch to Anthropic after OpenAI error
     expect(model.currentModelIndex).toBe(1)
-    expect(model.modelId).toBe('claude-sonnet-4-20250514')
+    expect(model.modelId).toBe('claude-haiku-4-5')
     expect(result.text).toBeTruthy()
     model.currentModelIndex = 0
 })
 
 test('streamText works', async () => {
     const model = createFallback({
-        models: [anthropic('claude-sonnet-4-20250514'), openai('gpt-3.5-turbo')],
+        models: [anthropic('claude-haiku-4-5'), openai('gpt-4.1-mini')],
     })
 
     const stream = await streamText({
@@ -226,7 +226,7 @@ test('streamText works', async () => {
 
 test('streamObject works', async () => {
     const model = createFallback({
-        models: [openai('gpt-4.1-mini'), anthropic('claude-sonnet-4-20250514')],
+        models: [openai('gpt-4.1-mini'), anthropic('claude-haiku-4-5')],
     })
 
     const stream = await streamObject({
@@ -289,28 +289,24 @@ test('ReadableStream works like i expect', async () => {
 })
 
 test('fallback switches models on stream error before any output', async () => {
-    // Create OpenAI client that errors immediately
-    const errorOpenAI = createOpenAI({
-        apiKey: process.env.OPENAI_KEY,
-        fetch: async (url, options) => {
-            const stream = new ReadableStream({
+    // Mock model that returns a stream that errors immediately (before any output)
+    const errorModel = new MockLanguageModelV4({
+        provider: 'mock-error',
+        modelId: 'error-model',
+        doStream: async () => ({
+            stream: new ReadableStream<LanguageModelV4StreamPart>({
                 start(controller) {
-                    // Error immediately before streaming any data
+                    controller.enqueue({ type: 'stream-start', warnings: [] })
+                    // Error immediately before streaming any real data
                     controller.error(new Error('Injected immediate error'))
                 },
-            })
-
-            return new Response(stream, {
-                // headers: result.headers,
-                // status: result.status,
-                // statusText: result.statusText,
-            })
-        },
+            }),
+        }),
     })
 
     let err
     const model = createFallback({
-        models: [errorOpenAI('gpt-3.5-turbo'), openai('gpt-3.5-turbo')],
+        models: [errorModel, openai('gpt-4.1-mini')],
         onError(error, modelId) {
             err = error
         },
@@ -339,46 +335,29 @@ test('fallback switches models on stream error before any output', async () => {
 })
 
 test('fallback switches models on stream error after some output', { timeout: 10000 }, async () => {
-    // Create OpenAI client that errors after first token
-    const errorOpenAI = createOpenAI({
-        apiKey: process.env.OPENAI_KEY,
-        fetch: async (url, options) => {
-            const result = await fetch(url, options)
-            const originalBody = result.body
-            if (!originalBody) throw new Error('No response body')
-
-            const reader = originalBody.getReader()
-            const stream = new ReadableStream({
-                async start(controller) {
-                    {
-                        const { value } = await reader.read()
-                        // console.log(new TextDecoder().decode(value))
-                        controller.enqueue(value)
-                    }
-                    {
-                        const { value } = await reader.read()
-                        // console.log(new TextDecoder().decode(value))
-                        controller.enqueue(value)
-                    }
-
+    // Mock model that streams some text output, then errors
+    const errorModel = new MockLanguageModelV4({
+        provider: 'mock-error',
+        modelId: 'error-after-output-model',
+        doStream: async () => ({
+            stream: new ReadableStream<LanguageModelV4StreamPart>({
+                start(controller) {
+                    controller.enqueue({ type: 'stream-start', warnings: [] })
+                    controller.enqueue({ type: 'text-start', id: 't1' })
+                    controller.enqueue({ type: 'text-delta', id: 't1', delta: 'partial' })
+                    // Error after some output has been streamed
                     controller.error(
                         new Error('Injected error after first token'),
                     )
                 },
-            })
-
-            return new Response(stream, {
-                headers: result.headers,
-                status: result.status,
-                statusText: result.statusText,
-            })
-        },
+            }),
+        }),
     })
 
     let err
     let text = ''
     const model = createFallback({
-        models: [errorOpenAI('gpt-3.5-turbo'), openai('gpt-3.5-turbo')],
+        models: [errorModel, openai('gpt-4.1-mini')],
         retryAfterOutput: true,
         onError(error, modelId) {
             err = error
@@ -433,7 +412,7 @@ test(
                     }),
                 }),
                 openai('gpt-4.1-mini'),
-                anthropic('claude-sonnet-4-20250514'),
+                anthropic('claude-haiku-4-5'),
             ],
             shouldRetryThisError: (error) => {
                 encounteredErrors.push(error)

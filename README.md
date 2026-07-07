@@ -26,7 +26,7 @@ This package ensures reliability by specifying multiple AI models as fallbacks. 
 ### Installation
 
 ```bash
-npm install ai-fallback@0 # use version 0.x.x for AI sdk v4
+npm install ai-fallback@3 ai @ai-sdk/openai @ai-sdk/anthropic
 ```
 
 ---
@@ -38,8 +38,8 @@ Reset to the primary model after a delay (e.g., 1 minute):
 ```javascript
 const model = createFallback({
     models: [
-        anthropic('claude-3-haiku-20240307'), // Use Claude as preferred model
-        openai('gpt-3.5-turbo'),
+        anthropic('claude-haiku-4-5'), // Use Claude as preferred model
+        openai('gpt-4.1-mini'),
     ],
     onError: (error, modelId) => {
         console.error(`Error with model ${modelId}:`, error)
@@ -60,7 +60,7 @@ import { openai } from '@ai-sdk/openai'
 import { anthropic } from '@ai-sdk/anthropic'
 
 const model = createFallback({
-    models: [anthropic('claude-3-haiku-20240307'), openai('gpt-3.5-turbo')],
+    models: [anthropic('claude-haiku-4-5'), openai('gpt-4.1-mini')],
 })
 ```
 

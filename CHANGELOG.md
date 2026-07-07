@@ -1,5 +1,50 @@
 # ai-fallback
 
+## 3.0.0
+
+### Major Changes
+
+1. **Upgrade to AI SDK v7** (`ai@7.x`, `LanguageModelV4`) — `FallbackModel` now implements `LanguageModelV4` with `specificationVersion: 'v4'`, compatible with the latest provider packages (`@ai-sdk/openai@4.x`, `@ai-sdk/anthropic@4.x`, `@ai-sdk/google@4.x`, etc.).
+
+   Peer dependency requirements:
+   - `@ai-sdk/provider` >= 4.0.0
+   - `@ai-sdk/provider-utils` >= 5.0.0
+
+   ```ts
+   import { createFallback } from 'ai-fallback'
+   import { openai } from '@ai-sdk/openai'       // v4.x
+   import { anthropic } from '@ai-sdk/anthropic'  // v4.x
+
+   const model = createFallback({
+     models: [anthropic('claude-haiku-4-5'), openai('gpt-4.1-mini')],
+   })
+   ```
+
+2. **Per-model provider options** — wrap a model in an object to attach provider-specific options that apply only when that model is active. Options are merged with the call-level `providerOptions`.
+
+   ```ts
+   const model = createFallback({
+     models: [
+       {
+         model: google('gemini-3-pro-preview'),
+         providerOptions: {
+           google: { thinkingConfig: { thinkingBudget: 32768 } },
+         },
+       },
+       {
+         model: google('gemini-2.5-flash-preview-09-2025'),
+         providerOptions: {
+           google: { thinkingConfig: { thinkingBudget: 24576 } },
+         },
+       },
+     ],
+   })
+   ```
+
+Thanks @slegarraga for #19!
+
+Closes https://github.com/remorses/ai-fallback/issues/20
+
 ## 2.0.1
 
 ### Patch Changes
